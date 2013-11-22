@@ -6,7 +6,7 @@ XMLIdealGeometryESSource = cms.ESSource("XMLIdealGeometryESSource",
                                                                    'Geometry/CMSCommonData/data/extend/cmsextent.xml',
                                                                    'Geometry/CMSCommonData/data/cms.xml',
                                                                    'Geometry/CMSCommonData/data/cmsMother.xml',
-                                                                   'Geometry/PFCalGeometryBuilder/data/PFCal_geometry.xml'
+                                                                   'Geometry/PFCalGeometryBuilder/data/pfcal.xml'
                                                                    ),
                                         rootNodeName = cms.string('cms:OCMS')
                                         )
