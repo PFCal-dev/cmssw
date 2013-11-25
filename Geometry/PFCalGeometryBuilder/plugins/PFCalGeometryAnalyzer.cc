@@ -1,8 +1,10 @@
 #include "Geometry/PFCalGeometryBuilder/plugins/PFCalGeometryAnalyzer.h"
+#include "Geometry/PFCalGeometryBuilder/interface/PFCalGeometryBuilderFromDDD.h"
 
 #include "DetectorDescription/Core/interface/adjgraph.h"
 #include "DetectorDescription/Core/interface/graphwalker.h"
 #include "DetectorDescription/Core/interface/graph_util.h"
+
 
 #include "DetectorDescription/OfflineDBLoader/interface/GeometryInfoDump.h"
 
@@ -21,6 +23,7 @@ PFCalGeometryAnalyzer::PFCalGeometryAnalyzer( const edm::ParameterSet &iConfig )
   ddRootNodeName_      = iConfig.getUntrackedParameter<std::string>("ddRootNodeName", "cms:OCMS");
   geomInfoDumpCfg_     = iConfig.getParameter<edm::ParameterSet>("geomInfoDumpCfg");
   runGeometryInfoDump_ = geomInfoDumpCfg_.getUntrackedParameter<bool>("run",false);
+  runGeometryBuilderFromDDD_ = iConfig.getUntrackedParameter<bool>("runGeometryBuilderFromDDD",true);
 }
 
 //
@@ -56,6 +59,11 @@ void PFCalGeometryAnalyzer::analyze( const edm::Event &iEvent, const edm::EventS
 		       pToDDView,
 		       geomInfoDumpCfg_.getUntrackedParameter<std::string>("outFileName", "GeoHistory"),
 		       geomInfoDumpCfg_.getUntrackedParameter<uint32_t>("numNodesToDump", 0));
+    }
+  if(runGeometryBuilderFromDDD_)
+    {
+      PFCalGeometryBuilderFromDDD dddBuilder;
+      dddBuilder.build( &pToDDView );
     }
 
   cout << "[PFCalGeometryAnalyzer::analyze] end" << endl;

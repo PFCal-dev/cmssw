@@ -11,6 +11,7 @@
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetType.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
+#include "Geometry/CommonDetUnit/interface/TrackingGeometry.h"
 
 #include <vector>
 #include <map>
@@ -18,15 +19,9 @@
 class GeomDetType;
 class GeomDetUnit;
 
-class PFCalGeometry {
+class PFCalGeometry : public TrackingGeometry {
 
  public:
-
-  typedef std::vector<GeomDetType*>          DetTypeContainer;
-  typedef std::vector<GeomDet*>              DetContainer;
-  typedef std::vector<GeomDetUnit*>          DetUnitContainer;
-  typedef std::vector<DetId>                 DetIdContainer;
-  typedef  __gnu_cxx::hash_map< unsigned int, GeomDet*>     mapIdToDet;
 
   /// Default constructor
   PFCalGeometry();

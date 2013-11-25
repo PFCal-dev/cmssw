@@ -39,7 +39,7 @@ class PFCalGeometryBuilderFromDDD
 
  private:
 
-  PFCalGeometry* buildGeometry(DDFilteredView& fview);
+  PFCalGeometry* buildGeometry(const DDCompactView *fview);
 
 };
 

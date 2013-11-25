@@ -34,7 +34,7 @@ class PFCalGeometryAnalyzer : public edm::EDAnalyzer
   void showSerialized(const DDCompactView  &dd, const std::string & root);
 
   std::string ddViewName_,ddRootNodeName_;
-  bool listRoots_,showSerialized_,runGeometryInfoDump_;
+  bool listRoots_,showSerialized_,runGeometryInfoDump_,runGeometryBuilderFromDDD_;
   edm::ParameterSet geomInfoDumpCfg_;
 
 };
