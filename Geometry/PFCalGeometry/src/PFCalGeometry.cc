@@ -16,27 +16,27 @@ PFCalGeometry::~PFCalGeometry(){}
 
 //
 const PFCalGeometry::DetTypeContainer& PFCalGeometry::detTypes() const{
-  return m_partitionTypes;
+  return cellTypes_;
 }
 
 //
 const PFCalGeometry::DetUnitContainer& PFCalGeometry::detUnits() const{
-  return m_partitions;
+  return cellUnits_;
 }
 
 //
 const PFCalGeometry::DetContainer& PFCalGeometry::dets() const{
-  return m_dets;
+  return cells_;
 }
 
 //
 const PFCalGeometry::DetIdContainer& PFCalGeometry::detUnitIds() const{
-  return m_partitionIds;
+  return cellDetIds_;
 }
 
 //
 const PFCalGeometry::DetIdContainer& PFCalGeometry::detIds() const {
-  return m_detIds;
+  return cellDetIds_;
 }
 
 //
@@ -48,6 +48,34 @@ const GeomDetUnit* PFCalGeometry::idToDetUnit(DetId id) const
 //
 const GeomDet* PFCalGeometry::idToDet(DetId id) const
 {
-  mapIdToDet::const_iterator i = m_detIdDict.find(id);
-  return (i != m_detIdDict.end()) ? i->second : 0 ;
+  mapIdToDet::const_iterator i = detIdDict_.find(id);
+  return (i != detIdDict_.end()) ? i->second : 0 ;
+}
+
+//
+void PFCalGeometry::add(PFCalCell *cell)
+{
+  cells_.push_back(cell);
+  cellDetIds_.push_back(cell->id());
+  GeomDetType* t = const_cast<GeomDetType*>(&cell->type());
+  cellTypes_.push_back( t );
+  cellUnits_.push_back(cell);
+  detIdDict_.insert(std::pair<DetId,GeomDetUnit*>(cell->geographicalId(),cell));
+}
+
+
+//
+void PFCalGeometry::print()
+{
+  std::cout << "[PFCalGeometry] current geometry is" << std::endl;
+  for(size_t i=0; i< cells_.size(); i++)
+    {
+      const PFCalCell *cell=dynamic_cast<const PFCalCell *>(cells_[i]);
+      const PFCalCellSpecs &cellSpecs=dynamic_cast<const PFCalCellSpecs &>(cell->type());
+      const StripTopology &top=dynamic_cast<const StripTopology &>(cellSpecs.topology());
+
+      std::cout << cellSpecs.detName() << " 0x" << std::hex << cellDetIds_[i].rawId() << std::dec 
+		<< " (" << top.localPosition(0).x() << "," << top.localPosition(0).y() << ","<< top.localPosition(0).z() << ")" << std::endl;
+    }
+  std::cout << std::endl;
 }

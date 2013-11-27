@@ -14,7 +14,9 @@ class PFCalNumberingScheme
  public :
   PFCalNumberingScheme () { }
   ~PFCalNumberingScheme() { }
-  DetId buildDetIdFor();
+  DetId buildDetIdFor(bool isPos,bool isHE, unsigned int layerId, unsigned int sectorId);
+
+ private:
 
 };
 

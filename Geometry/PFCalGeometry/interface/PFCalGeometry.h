@@ -13,6 +13,8 @@
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "Geometry/CommonDetUnit/interface/TrackingGeometry.h"
 
+#include "Geometry/PFCalGeometry/interface/PFCalCell.h"
+
 #include <vector>
 #include <map>
 
@@ -50,15 +52,20 @@ class PFCalGeometry : public TrackingGeometry {
   // Return the pointer to the GeomDet corresponding to a given DetId
   virtual const GeomDet* idToDet(DetId) const;
 
+  void add(PFCalCell *);
+
+  void print();
 
  private:
 
-  DetContainer m_dets;
-  DetUnitContainer m_partitions;
-  DetTypeContainer m_partitionTypes;
-  DetIdContainer m_partitionIds,  m_detIds;
+  DetContainer cells_;
+  DetIdContainer cellDetIds_;
+  DetTypeContainer cellTypes_;
+  DetUnitContainer cellUnits_;
 
-  mapIdToDet m_detIdDict;
+
+  mapIdToDet detIdDict_;
+
 };
 
 #endif
