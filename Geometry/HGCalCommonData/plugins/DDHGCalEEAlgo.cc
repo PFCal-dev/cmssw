@@ -59,15 +59,19 @@ void DDHGCalEEAlgo::initialize(const DDNumericArguments & nArgs,
 			      << thick4[i] << ":" << thick5[i];
 
   slopeB        = nArgs["SlopeBottom"];
-  slopeT        = nArgs["SlopeTop"];
-  zFront        = nArgs["ZFront"];
-  rMaxFront     = nArgs["RMaxFront"];
+  slopeT        = vArgs["SlopeTop"];
+  zFront        = vArgs["ZFront"];
+  rMaxFront     = vArgs["RMaxFront"];
   sectors       = (int)(nArgs["Sectors"]);
   idName        = parent().name().name();
   idNameSpace   = DDCurrentNamespace::ns();
-  edm::LogInfo("HGCalGeom") << "DDHGCalEEAlgo: Zmin " << zFront << "\tRmax "
-			    << rMaxFront << "\tSlopes " << slopeB << ":"
-			    << slopeT << "\tSectors " << sectors
+  edm::LogInfo("HGCalGeom") << "DDHGCalEEAlgo: Bottom slope " << slopeB
+			    << " " << slopeT.size() << " slopes for top";
+  for (unsigned int i=0; i<slopeT.size(); ++i)
+    edm::LogInfo("HGCalGeom") << "Block [" << i << "] Zmin " << zFront[i]
+			      << " Rmax " << rMaxFront[i] << " Slope " 
+			      << slopeT[i];
+  edm::LogInfo("HGCalGeom") << "DDHGCalEEAlgo: Sectors " << sectors
 			    << "\tNameSpace:Name " << idNameSpace
 			    << ":" << idName;
 
@@ -106,8 +110,8 @@ void DDHGCalEEAlgo::constructLayers(DDLogicalPart module, DDCompactView& cpv) {
 	double  zo     = zi + thick[ii];
 	double  rinF   = zi * slopeB;
 	double  rinB   = zo * slopeB;
-	double  routF  = rMaxFront + (zi - zFront) * slopeT;
-	double  routB  = rMaxFront + (zo - zFront) * slopeT;
+	double  routF  = rMax(zi);
+	double  routB  = rMax(zo);
 	std::string name = "HGCal"+names[ii]+dbl_to_string(copy);
 	edm::LogInfo("HGCalGeom") << "DDHGCalEEAlgo test: Layer " << i << ":" 
 				  << ii << " Front " << zi << ", " << rinF 
@@ -174,4 +178,14 @@ DDHGCalEEAlgo::parameterLayer(double rinF, double routF, double rinB,
 			   << " " << parm.phi/CLHEP::deg << " Position " 
 			   << parm.xpos << " " << parm.ypos << " " <<parm.zpos;
   return parm;
+}
+
+double DDHGCalEEAlgo::rMax(double z) {
+
+  double r(0);
+  for (unsigned int k=0; k<slopeT.size(); ++k) {
+    if (z < zFront[k]) break;
+    r = rMaxFront[k] + (z - zFront[k]) * slopeT[k];
+  }
+  return r;
 }
