@@ -7,8 +7,19 @@
     <Parameter name="SensitiveDetector" value="HGCSensitiveDetector" eval="false"/>
     <Parameter name="ReadOutName" value="HGCHitsEE" eval="false"/>
   </SpecPar>
-  <SpecPar name="hgche">
-    <PartSelector path="//HGCalHE.*Sensitive.*"/>
+  <SpecPar name="hgchesil">
+    <PartSelector path="//HGCalHESiliconSensitive.*"/>
+    <Parameter name="SensitiveDetector" value="HGCSensitiveDetector" eval="false"/>
+    <Parameter name="ReadOutName" value="HGCHitsHE" eval="false"/>
+  </SpecPar>
+  <SpecPar name="hgchesci">
+    <PartSelector path="//HGCalHEScintillatorSensitive.*"/>
+    <Parameter name="SensitiveDetector" value="HGCSensitiveDetector" eval="false"/>
+    <Parameter name="ReadOutName" value="HGCHitsHE" eval="false"/>
+  </SpecPar>
+  <SpecPar name="hgchegem">
+    <PartSelector path="//HGCalHEGem1Sensitive.*"/>
+    <PartSelector path="//HGCalHEGem2Sensitive.*"/>
     <Parameter name="SensitiveDetector" value="HGCSensitiveDetector" eval="false"/>
     <Parameter name="ReadOutName" value="HGCHitsHE" eval="false"/>
   </SpecPar>

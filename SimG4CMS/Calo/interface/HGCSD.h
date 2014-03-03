@@ -49,6 +49,7 @@ private:
   std::vector<double>           gpar;
   G4int                         mumPDG, mupPDG; 
   double                        eminHit;
+  ForwardSubdetector            myFwdSubdet_;
 
 };
 

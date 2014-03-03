@@ -61,6 +61,7 @@ CaloSD::CaloSD(G4String name, const DDCompactView & cpv,
       break;
     }
   }
+
 #ifdef DebugLog
   LogDebug("CaloSim") << "***************************************************" 
                       << "\n"

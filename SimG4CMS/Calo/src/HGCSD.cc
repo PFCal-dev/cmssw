@@ -39,6 +39,15 @@ HGCSD::HGCSD(G4String name, const DDCompactView & cpv,
   edm::ParameterSet m_HGC = p.getParameter<edm::ParameterSet>("HGCSD");
   eminHit          = m_HGC.getParameter<double>("EminHit")*MeV;
 
+  //this is defined in the hgcsens.xml
+  G4String myName(this->nameOfSD());
+  myFwdSubdet_=ForwardSubdetector::ForwardEmpty;
+  if(myName.find("HitsEE")!=std::string::npos)      myFwdSubdet_=ForwardSubdetector::HGCEE;
+  else if(myName.find("HitsHE")!=std::string::npos) myFwdSubdet_=ForwardSubdetector::HGCHE;
+  
+  std::cout << myName << " " << myFwdSubdet_ << std::endl;
+
+
 #ifdef DebugLog
   LogDebug("HGCSim") << "**************************************************" 
                       << "\n"
@@ -116,15 +125,7 @@ uint32_t HGCSD::setDetUnitId(G4Step * aStep) {
   G4VSolid *solid = aStep->GetPreStepPoint()->GetPhysicalVolume()->GetLogicalVolume()->GetSolid();
   G4Trap *layerSolid=(G4Trap *)solid;
     
-  //FIXME urgently! no string parsing if possible
-  //  G4String nameVolume = preStepPoint->GetPhysicalVolume()->GetName();
-  ForwardSubdetector fwdSubdet(ForwardSubdetector::HGCEE);
-  //  if(nameVolume.find("HE")!=std::string::npos) fwdSubdet=ForwardSubdetector::HGCHE;
-  //  size_t pos=nameVolume.find("_")+1;
-  //  G4String layerStr=nameVolume.substr(pos,nameVolume.size()-1);
-  //  G4int copyNb=preStepPoint->GetPhysicalVolume()->GetCopyNo();
-
-  
+  //trapezoid definition
   float dz(0), bl1(0),tl1(0),h1(0);
   if(layerSolid){
     dz =layerSolid->GetZHalfLength();   //half width of the layer
@@ -137,24 +138,13 @@ uint32_t HGCSD::setDetUnitId(G4Step * aStep) {
     //throw cms::Exception("Unknown", "HGCSD") <<  "[HGCSD] Failed to cast sensitive volume to trapezoid!! The DetIds will be missing lateral segmentation\n";
   }
 
-  //get the det unit id with 
-  ForwardSubdetector subdet =  fwdSubdet;
-  //  int layer  = atoi(layerStr.c_str());
-  //  int module = copyNb;
-  //  int iz     = (hitPoint.z() > 0) ? 1 : -1;
-
+  //get the info on the layer, sector and z position
   int layer  = touch->GetReplicaNumber(0);
-  int module = touch->GetReplicaNumber(1);
+  int sector = touch->GetReplicaNumber(1);
   int iz     = touch->GetReplicaNumber(3)==1 ? 1 : -1;
-  
-  //  std::cout << "layer=" << layer << "=" << touch->GetReplicaNumber(0) << "\t"
-  //  	    << "mod="   << module << "=" << touch->GetReplicaNumber(1) << "\t"
-  //	    << "izplmin=" << iz  << "=" << touch->GetReplicaNumber(3) << std::endl; 
-  //    int layer    = (touch->GetReplicaNumber(0));
-  //  int module = (touch->GetReplicaNumber(1));
-  //  int izplmin = (touch->GetReplicaNumber(3)); 
 
-  return setDetUnitId (subdet, layer, module, iz, localpos, dz, bl1, tl1, h1);
+  //all done here
+  return setDetUnitId (myFwdSubdet_, layer, sector, iz, localpos, dz, bl1, tl1, h1);
 }
 
 void HGCSD::initRun() {
@@ -174,9 +164,9 @@ bool HGCSD::filterHit(CaloG4Hit* aHit, double time) {
 
 
 //
-uint32_t HGCSD::setDetUnitId (ForwardSubdetector &subdet, int &layer, int &module, int &iz, G4ThreeVector &pos, float &dz, float &bl1, float &tl1, float &h1)
+uint32_t HGCSD::setDetUnitId (ForwardSubdetector &subdet, int &layer, int &sector, int &iz, G4ThreeVector &pos, float &dz, float &bl1, float &tl1, float &h1)
 {  
-  return (numberingScheme ? numberingScheme->getUnitID(subdet, layer, module, iz, pos, dz, bl1, tl1, h1) : 0);
+  return (numberingScheme ? numberingScheme->getUnitID(subdet, layer, sector, iz, pos, dz, bl1, tl1, h1) : 0);
 }
 
 //
