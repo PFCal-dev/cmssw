@@ -2,6 +2,8 @@
 #include "SimGeneral/MixingModule/interface/DigiAccumulatorMixModFactory.h"
 #include "SimCalorimetry/HGCSimProducers/plugins/HGCDigiProducer.h"
 #include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 
 //
 HGCDigiProducer::HGCDigiProducer(edm::ParameterSet const& pset, edm::EDProducer& mixMod) :

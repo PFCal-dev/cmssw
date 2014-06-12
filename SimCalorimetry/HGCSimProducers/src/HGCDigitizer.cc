@@ -10,7 +10,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "SimGeneral/MixingModule/interface/PileUpEventPrincipal.h"
 #include <boost/foreach.hpp>
-
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 //
 HGCDigitizer::HGCDigitizer(const edm::ParameterSet& ps) :
@@ -75,7 +75,15 @@ void HGCDigitizer::finalizeEvent(edm::Event& e, edm::EventSetup const& es)
 }
 
 //
-void HGCDigitizer::accumulate(edm::Event const& e, edm::EventSetup const& eventSetup) {
+void HGCDigitizer::accumulate(edm::Event const& e, edm::EventSetup const& eventSetup) 
+{
+  //get geometry
+  edm::ESHandle<HGCalGeometry> geom;
+  std::cout << producesEEDigis() << " " << producesHEfrontDigis() << " " <<  producesHEbackDigis()  << std::endl; 
+  if( producesEEDigis() )      eventSetup.get<IdealGeometryRecord>().get("HGCalEESensitive"            , geom);
+  if( producesHEfrontDigis() ) eventSetup.get<IdealGeometryRecord>().get("HGCalHESiliconSensitive"     , geom);
+  if( producesHEbackDigis() )  eventSetup.get<IdealGeometryRecord>().get("HGCalHEScintillatorSensitive", geom);
+  std::cout << geom.isValid() << " " << std::endl;
 
   //get inputs
   edm::Handle<edm::PCaloHitContainer> hits;
@@ -86,11 +94,17 @@ void HGCDigitizer::accumulate(edm::Event const& e, edm::EventSetup const& eventS
   }
 
   //accumulate in-time the main event
-  accumulate(hits, 0);
+  accumulate(hits, 0, geom);
 }
 
 //
-void HGCDigitizer::accumulate(PileUpEventPrincipal const& e, edm::EventSetup const& eventSetup) {
+void HGCDigitizer::accumulate(PileUpEventPrincipal const& e, edm::EventSetup const& eventSetup) 
+{
+  //get geometry
+  edm::ESHandle<HGCalGeometry> geom;
+  if( producesEEDigis() )      eventSetup.get<IdealGeometryRecord>().get("HGCalEESensitive"            , geom);
+  if( producesHEfrontDigis() ) eventSetup.get<IdealGeometryRecord>().get("HGCalHESiliconSensitive"     , geom);
+  if( producesHEbackDigis() )  eventSetup.get<IdealGeometryRecord>().get("HGCalHEScintillatorSensitive", geom);
 
   //get inputs
   edm::Handle<edm::PCaloHitContainer> hits;
@@ -101,23 +115,38 @@ void HGCDigitizer::accumulate(PileUpEventPrincipal const& e, edm::EventSetup con
   }
 
   //accumulate for the simulated bunch crossing
-  accumulate(hits, e.bunchCrossing());
+  accumulate(hits, e.bunchCrossing(),geom);
 }
 
 //
-void HGCDigitizer::accumulate(edm::Handle<edm::PCaloHitContainer> const &hits, int bxCrossing)
+void HGCDigitizer::accumulate(edm::Handle<edm::PCaloHitContainer> const &hits, int bxCrossing,const edm::ESHandle<HGCalGeometry> &geom)
 {
   for(edm::PCaloHitContainer::const_iterator hit_it = hits->begin(); hit_it != hits->end(); ++hit_it)
     {
-      //for now use a single time sample
-      int    itime = 0; //(int) ( hit_it->time() - bxTime_*bxCrossing ); // - jitter etc.;
       HGCalDetId simId( hit_it->id() );
-      
-      //this could be changed in the future to use the geometry record
-      uint32_t id = producesEEDigis() ?
-	(uint32_t)HGCEEDetId(mySubDet_,simId.zside(),simId.layer(),simId.sector(),simId.subsector(),simId.cell()):
-	(uint32_t)HGCHEDetId(mySubDet_,simId.zside(),simId.layer(),simId.sector(),simId.subsector(),simId.cell());
+      int layer(simId.layer()), cell(simId.cell());
+      if(geom.isValid())
+	{
+	  const HGCalTopology &topo=geom->topology();
+	  const HGCalDDDConstants &dddConst=topo.dddConstants();
+	  std::pair<int,int> recoLayerCell=dddConst.simToReco(cell,layer,topo.detectorType());
+	  std::cout << layer << "," << cell << "->";
+	  cell  = recoLayerCell.first;
+	  layer = recoLayerCell.second;
+	  std::cout << layer << "," << cell << std::endl;
+	}
 
+      //this could be changed in the future to use the geometry record
+      DetId id = ( producesEEDigis() ?
+		   (uint32_t)HGCEEDetId(mySubDet_,simId.zside(),layer,simId.sector(),simId.subsector(),cell):
+		   (uint32_t)HGCHEDetId(mySubDet_,simId.zside(),layer,simId.sector(),simId.subsector(),cell) );
+
+      GlobalPoint globalPos=geom->getPosition( id );
+
+      //single time sample
+      int    itime = 0; //
+      //check units
+      //int itime=(int) ( ((hit_it->time()-globalPos.z()/CLHEP::c_light) - bxTime_*bxCrossing)/bxCrossing ); // - jitter etc.;
       double ien   = hit_it->energy();
 
       HGCSimHitDataAccumulator::iterator simHitIt=simHitAccumulator_.find(id);
