@@ -22,6 +22,9 @@ namespace cms_content
 class GlobalHadronCompensation : public pandora::EnergyCorrectionPlugin
 {
  public:
+ 
+  enum CorrectionLevelsEnum { TRIVIAL, EMWEIGHTED, PIOECORRECTED, PIRESIDUALS, GC};
+
   /**
    *  @brief  Default constructor
    */
@@ -52,7 +55,7 @@ class GlobalHadronCompensation : public pandora::EnergyCorrectionPlugin
     float p1( m_pioe_bananaParam_1.size()==3 ? m_pioe_bananaParam_1[0]+(m_pioe_bananaParam_1[1]*(1-exp(-(m_pioe_bananaParam_1[2]*totalEn)))) : 0 );
     float p2( m_pioe_bananaParam_2.size()==3 ? m_pioe_bananaParam_2[0]+(m_pioe_bananaParam_2[1]*(1-exp(-(m_pioe_bananaParam_2[2]*totalEn)))) : 0 );
 
-    float residualScale(p0+p1*backFracEn_m_mip+p2*backFracEn_m_mip*backFracEn_m_mip);
+    float residualScale(p0+p1*backFracEn_m_mip+p2*pow(backFracEn_m_mip,2));
     return residualScale>0 ? 1./residualScale : 1.0;
   }
 
@@ -80,9 +83,11 @@ class GlobalHadronCompensation : public pandora::EnergyCorrectionPlugin
    */
   pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
 
+  int                m_CorrectionLevel;
   float              m_nMIPsCut;
-  float              m_IntegMIP_emEn_EE;
+  float              m_IntegMIP_emEn;
   float              m_e_em_EE,             m_e_em_FH,             m_e_em_BH;
+  std::vector<float> m_EEWeights,           m_FHWeights,           m_BHWeights;
   std::vector<float> m_pioe_EE,             m_pioe_FH,             m_pioe_BH;
   std::vector<float> m_pioe_bananaParam_0,  m_pioe_bananaParam_1,  m_pioe_bananaParam_2;
 
