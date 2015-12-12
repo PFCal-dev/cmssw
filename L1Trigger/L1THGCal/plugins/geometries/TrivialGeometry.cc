@@ -12,16 +12,17 @@ public:
       trigger_cells_to_modules_[i] = i;
 
       HGCalTriggerGeometry::TriggerCell::list_type tc_empty;
+      HGCalTriggerGeometry::topo_list_type neigh_empty;
       trigger_cells_[i].reset( new HGCalTriggerGeometry::TriggerCell(i,i,
                                                                      GlobalPoint(),
-                                                                     tc_empty,
+                                                                     neigh_empty,
                                                                      tc_empty) );
       
       HGCalTriggerGeometry::Module::list_type mod_empty;
       HGCalTriggerGeometry::Module::list_type mod_comps = { i };
       HGCalTriggerGeometry::Module::tc_map_type map_empty;
       modules_[i].reset( new HGCalTriggerGeometry::Module(i,GlobalPoint(),
-                                                          mod_empty,
+                                                          neigh_empty,
                                                           mod_comps,
                                                           map_empty) );
     }

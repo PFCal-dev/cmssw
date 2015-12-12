@@ -10,6 +10,7 @@
 #include "DataFormats/ForwardDetId/interface/HGCTriggerDetId.h"
 
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerGeometryBase.h"
+#include "L1Trigger/L1THGCal/interface/HGCalTriggerTopologyFinder.h"
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerFECodecBase.h"
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerBackendProcessor.h"
 
@@ -30,6 +31,7 @@ class HGCalTriggerDigiProducer : public edm::EDProducer {
   edm::EDGetToken inputee_, inputfh_, inputbh_;
   // algorithm containers
   std::unique_ptr<HGCalTriggerGeometryBase> triggerGeometry_;
+  std::vector<std::string> modifiers_ ; 
   std::unique_ptr<HGCalTriggerFECodecBase> codec_;
   HGCalTriggerBackendProcessor backEndProcessor_;
 };
@@ -51,6 +53,8 @@ HGCalTriggerDigiProducer(const edm::ParameterSet& conf):
   HGCalTriggerGeometryBase* geometry = 
     HGCalTriggerGeometryFactory::get()->create(trigGeomName,geometryConfig);
   triggerGeometry_.reset(geometry);
+
+  modifiers_ = geometryConfig.getParameter<std::vector<std::string> > ("geometryModifiers");
   
   //setup FE codec
   const edm::ParameterSet& feCodecConfig = 
@@ -80,7 +84,15 @@ void HGCalTriggerDigiProducer::beginRun(const edm::Run& /*run*/,
   es.get<IdealGeometryRecord>().get(ee_sd_name,info.topo_ee);
   es.get<IdealGeometryRecord>().get(fh_sd_name,info.topo_fh);
   es.get<IdealGeometryRecord>().get(bh_sd_name,info.topo_bh);
-  triggerGeometry_->initialize(info);
+
+
+  for( const std::string& m : modifiers_ ) 
+	{
+		HGCalTriggerGeometry::HGCalTriggerGeometryModifier *mod = HGCalTriggerGeometry::HGCalTriggerGeometryModifierFactory::get() . create(m ,  *info.geom_ee ) ; 
+		triggerGeometry_ -> geometryModifiers_ . push_back(mod);
+	}
+
+  triggerGeometry_ -> initialize(info);
 }
 
 void HGCalTriggerDigiProducer::produce(edm::Event& e, const edm::EventSetup& es) {
