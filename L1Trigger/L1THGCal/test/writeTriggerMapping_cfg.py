@@ -58,10 +58,10 @@ process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
 )
 
 # Additional output definition
-process.TFileService = cms.Service(
-    "TFileService",
-    fileName = cms.string("test.root")
-    )
+#process.TFileService = cms.Service(
+    #"TFileService",
+    #fileName = cms.string("test.root")
+    #)
 
 
 
@@ -105,7 +105,12 @@ process.hgcalTriggerCellIndexWriter = cms.EDAnalyzer(
         eeSDName = cms.string('HGCalEESensitive'),
         fhSDName = cms.string('HGCalHESiliconSensitive'),
         bhSDName = cms.string('HGCalHEScintillatorSensitive'),
-        )
+        ),
+    Sector = cms.int32(1),
+    ZSide = cms.int32(1),
+    Layer  = cms.int32(15),
+    Module = cms.int32(10),
+    OutputFile = cms.string("cell_map_layer15_module10.txt")
     )
 process.writer_step = cms.Path(process.hgcalTriggerCellIndexWriter)
 

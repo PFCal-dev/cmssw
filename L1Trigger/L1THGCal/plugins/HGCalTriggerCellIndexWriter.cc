@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -41,11 +42,22 @@ class HGCalTriggerCellIndexWriter : public edm::EDAnalyzer
         void writeTriggerCellMapping(const HGCalTriggerGeometryBase::es_info&);
         std::unique_ptr<HGCalTriggerGeometryBase> triggerGeometry_; 
         //
+        int sector_;
+        int zside_;
+        int layer_;
+        int module_;
+        //
+        std::string outputFile_;
 };
 
 
 /*****************************************************************/
-HGCalTriggerCellIndexWriter::HGCalTriggerCellIndexWriter(const edm::ParameterSet& conf) 
+HGCalTriggerCellIndexWriter::HGCalTriggerCellIndexWriter(const edm::ParameterSet& conf):
+    sector_(conf.getParameter<int>("Sector")),
+    zside_(conf.getParameter<int>("ZSide")),
+    layer_(conf.getParameter<int>("Layer")),
+    module_(conf.getParameter<int>("Module")),
+    outputFile_(conf.getParameter<std::string>("OutputFile"))
 /*****************************************************************/
 {
     //setup geometry 
@@ -91,10 +103,6 @@ void HGCalTriggerCellIndexWriter::writeTriggerCellMapping(const HGCalTriggerGeom
 /*****************************************************************/
 {
     std::cout<<"In HGCalTriggerCellIndexWriter::writeTriggerCellMapping()\n";
-    int sector = 1;
-    int zside = 1;
-    int layer = 15;
-    int module = 10;
 
     std::map<uint32_t,uint32_t> cellsIndex;
     std::map<uint32_t,uint32_t> cellsSortedIndex;
@@ -107,10 +115,10 @@ void HGCalTriggerCellIndexWriter::writeTriggerCellMapping(const HGCalTriggerGeom
         HGCTriggerDetId id(id_module.first);
         const auto& modulePtr = id_module.second;
         // Use only a given module
-        if(id.zside()!=zside ||
-                id.layer()!=layer ||
-                id.sector()!=sector ||
-                id.module()!=module) continue;
+        if(id.zside()!=zside_ ||
+                id.layer()!=layer_ ||
+                id.sector()!=sector_ ||
+                id.module()!=module_) continue;
 
         std::cout<<"  Got the module I was looking for\n";
         std::cout<<"  Now looping on trigger cells inside module\n";
@@ -141,22 +149,23 @@ void HGCalTriggerCellIndexWriter::writeTriggerCellMapping(const HGCalTriggerGeom
         }
 
         // loop over sorted cells and print index
+        std::vector<uint32_t> cellsIndexToPrint;
         for(const auto& i_c : cellsSortedIndex)
         {
             uint32_t originalIndex = cellsIndex.at(i_c.second);
+            cellsIndexToPrint.push_back(originalIndex);
             HGCTriggerDetId tcDetId( triggerGeometry_->cellsToTriggerCellsMap().at(i_c.second) );
             std::cout<<"    "<<i_c.second<<" = "<<i_c.first<<" -> "<<originalIndex<<" in TC "<<tcDetId.cell()<<" Module "<<tcDetId.module()<<"\n";
             //std::cout<<"    "<<c_i.first<<" "<<c_i.second<<" IN TC "<<tcDetId.cell()<<"\n";
         }
 
-        // reverse list order for printing
-        std::vector<uint32_t> cellsIndexToPrint;
-        for(const auto& i_c : cellsSortedIndex) cellsIndexToPrint.push_back(i_c.first);
+        std::fstream output(outputFile_, std::ios::out);
         // Print in file in reversed order
         for(std::vector<uint32_t>::const_reverse_iterator itr=cellsIndexToPrint.crbegin(); itr!=cellsIndexToPrint.crend(); ++itr)
         {
-            std::cout<<*itr<<"\n";
+            output<<*itr<<"\n";
         }
+        output.close();
     }
 }
 
