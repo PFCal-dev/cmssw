@@ -102,8 +102,6 @@ void HGCalTriggerCellIndexWriter::beginRun(const edm::Run& /*run*/,
 void HGCalTriggerCellIndexWriter::writeTriggerCellMapping(const HGCalTriggerGeometryBase::es_info& info)
 /*****************************************************************/
 {
-    std::cout<<"In HGCalTriggerCellIndexWriter::writeTriggerCellMapping()\n";
-
     std::map<uint32_t,uint32_t> cellsIndex;
     std::map<uint32_t,uint32_t> cellsSortedIndex;
     std::multimap<uint32_t,uint32_t> triggerCellsAndCells;
@@ -114,23 +112,18 @@ void HGCalTriggerCellIndexWriter::writeTriggerCellMapping(const HGCalTriggerGeom
 
         HGCTriggerDetId id(id_module.first);
         const auto& modulePtr = id_module.second;
-        // Use only a given module
+        // Use only the chosen module
         if(id.zside()!=zside_ ||
                 id.layer()!=layer_ ||
                 id.sector()!=sector_ ||
                 id.module()!=module_) continue;
-
-        std::cout<<"  Got the module I was looking for\n";
-        std::cout<<"  Now looping on trigger cells inside module\n";
 
         // fill (trigger cell, cell) list into a sorted map
         for(const auto& tc_c : modulePtr->triggerCellComponents())
         {
             cellsIndex.insert( std::make_pair(tc_c.second, 0) );
             triggerCellsAndCells.insert( std::make_pair(tc_c.first, tc_c.second) );
-            std::cout<<"   ("<<tc_c.first<<","<<tc_c.second<<")\n";
         }
-        std::cout<<"  I counted "<<triggerCellsAndCells.size()<<" cells in module\n";
         // translate the cell ID into an index inside the module
         uint32_t index = 0;
         for(auto& c_i : cellsIndex) 
@@ -154,9 +147,6 @@ void HGCalTriggerCellIndexWriter::writeTriggerCellMapping(const HGCalTriggerGeom
         {
             uint32_t originalIndex = cellsIndex.at(i_c.second);
             cellsIndexToPrint.push_back(originalIndex);
-            HGCTriggerDetId tcDetId( triggerGeometry_->cellsToTriggerCellsMap().at(i_c.second) );
-            std::cout<<"    "<<i_c.second<<" = "<<i_c.first<<" -> "<<originalIndex<<" in TC "<<tcDetId.cell()<<" Module "<<tcDetId.module()<<"\n";
-            //std::cout<<"    "<<c_i.first<<" "<<c_i.second<<" IN TC "<<tcDetId.cell()<<"\n";
         }
 
         std::fstream output(outputFile_, std::ios::out);
