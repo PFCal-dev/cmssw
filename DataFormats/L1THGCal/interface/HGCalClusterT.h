@@ -134,6 +134,46 @@ namespace l1t
       uint32_t subdetId() const {return detId_.subdetId();} 
       uint32_t layer() const {return detId_.layer();}
       int32_t zside() const {return detId_.zside();}
+
+      int32_t ClusterET()             const {return ClusterET_;}
+      int32_t ClusterCenterX()        const {return ClusterCenterX_;}
+      int32_t ClusterCenterY()        const {return ClusterCenterY_;}
+      int32_t ClusterSizeY()          const {return ClusterSizeY_;}
+      int32_t ClusterSizeX()          const {return ClusterSizeX_;}
+      int32_t ClusterNoTriggerCells() const {return ClusterNoTriggerCells_;}
+      int32_t ClusterLocalMax()       const {return ClusterLocalMax_;}
+      int32_t ClusterLocalMax0ET()    const {return ClusterLocalMax0ET_;}
+      int32_t ClusterLocalMax0RelY()  const {return ClusterLocalMax0RelY_;}
+      int32_t ClusterLocalMax0RelX()  const {return ClusterLocalMax0RelX_;}
+      int32_t ClusterLocalMax1ET()    const {return ClusterLocalMax1ET_;}
+      int32_t ClusterLocalMax1RelY()  const {return ClusterLocalMax1RelY_;}
+      int32_t ClusterLocalMax1RelX()  const {return ClusterLocalMax1RelX_;}
+      int32_t ClusterLocalMax2ET()    const {return ClusterLocalMax2ET_;}
+      int32_t ClusterLocalMax2RelY()  const {return ClusterLocalMax2RelY_;}
+      int32_t ClusterLocalMax2RelX()  const {return ClusterLocalMax2RelX_;}
+      int32_t ClusterLocalMax3ET()    const {return ClusterLocalMax3ET_;}
+      int32_t ClusterLocalMax3RelY()  const {return ClusterLocalMax3RelY_;}
+      int32_t ClusterLocalMax3RelX()  const {return ClusterLocalMax3RelX_;}
+      
+      void SetClusterET(const int32_t CET)               { ClusterET_ = CET;}
+      void SetClusterCenterX(const int32_t CCX)          { ClusterCenterX_ = CCX;}
+      void SetClusterCenterY(const int32_t CCY)          { ClusterCenterY_ = CCY;}
+      void SetClusterSizeY(const int32_t CSY)            { ClusterSizeY_ = CSY;}
+      void SetClusterSizeX(const int32_t CSX)            { ClusterSizeX_ = CSX;}
+      void SetClusterNoTriggerCells(const int32_t CNTC)  { ClusterNoTriggerCells_ = CNTC;}
+      void SetClusterLocalMax(const int32_t CLM)         { ClusterLocalMax_ = CLM;}
+      void SetClusterLocalMax0ET(const int32_t CLM0ET)   { ClusterLocalMax0ET_ = CLM0ET;}
+      void SetClusterLocalMax0RelY(const int32_t CLM0RY) { ClusterLocalMax0RelY_ = CLM0RY;}
+      void SetClusterLocalMax0RelX(const int32_t CLM0RX) { ClusterLocalMax0RelX_ = CLM0RX;}
+      void SetClusterLocalMax1ET(const int32_t CLM1ET)   { ClusterLocalMax1ET_ = CLM1ET;}
+      void SetClusterLocalMax1RelY(const int32_t CLM1RY) { ClusterLocalMax1RelY_ = CLM1RY;}
+      void SetClusterLocalMax1RelX(const int32_t CLM1RX) { ClusterLocalMax1RelX_ = CLM1RX;}
+      void SetClusterLocalMax2ET(const int32_t CLM2ET)   { ClusterLocalMax2ET_ = CLM2ET;}
+      void SetClusterLocalMax2RelY(const int32_t CLM2RY) { ClusterLocalMax2RelY_ = CLM2RY;}
+      void SetClusterLocalMax2RelX(const int32_t CLM2RX) { ClusterLocalMax2RelX_ = CLM2RX;}
+      void SetClusterLocalMax3ET(const int32_t CLM3ET)   { ClusterLocalMax3ET_ = CLM3ET;}
+      void SetClusterLocalMax3RelY(const int32_t CLM3RY) { ClusterLocalMax3RelY_ = CLM3RY;}
+      void SetClusterLocalMax3RelX(const int32_t CLM3RX) { ClusterLocalMax3RelX_ = CLM3RX;}
       
 
       /* operators */
@@ -149,6 +189,28 @@ namespace l1t
       edm::PtrVector<C> constituents_;
       GlobalPoint centre_;
       GlobalPoint centreProj_; // centre projected onto the first HGCal layer
+
+
+      int32_t ClusterET_            = 0;
+      int32_t ClusterCenterX_       = 0;
+      int32_t ClusterCenterY_       = 0;
+      int32_t ClusterSizeY_         = 0;
+      int32_t ClusterSizeX_         = 0;
+      int32_t ClusterNoTriggerCells_= 0;
+      int32_t ClusterLocalMax_      = 0;
+      int32_t ClusterLocalMax0ET_   = 0;
+      int32_t ClusterLocalMax0RelY_ = 0;
+      int32_t ClusterLocalMax0RelX_ = 0;
+      int32_t ClusterLocalMax1ET_   = 0;
+      int32_t ClusterLocalMax1RelY_ = 0;
+      int32_t ClusterLocalMax1RelX_ = 0;
+      int32_t ClusterLocalMax2ET_   = 0;
+      int32_t ClusterLocalMax2RelY_ = 0;
+      int32_t ClusterLocalMax2RelX_ = 0;
+      int32_t ClusterLocalMax3ET_   = 0;
+      int32_t ClusterLocalMax3RelY_ = 0;
+      int32_t ClusterLocalMax3RelX_ = 0;
+
 
       double mipPt_;
       double seedMipPt_;

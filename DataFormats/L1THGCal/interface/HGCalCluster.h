@@ -26,8 +26,7 @@ namespace l1t {
 
       void setModule(uint32_t module) {module_ = module;}
       uint32_t module() const {return module_;}
-
-
+      
     private:
       uint32_t module_;
       
