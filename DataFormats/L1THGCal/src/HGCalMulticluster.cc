@@ -8,12 +8,14 @@ HGCalMulticluster::HGCalMulticluster( const LorentzVector p4,
                             int phi )
    : HGCalClusterT<l1t::HGCalCluster>(p4, pt, eta, phi)
 {
+  this->setClusterStep(ClusterStep::StepMulticluster);
 }
 
 
 HGCalMulticluster::HGCalMulticluster( const edm::Ptr<l1t::HGCalCluster> &clusterSeed )
     : HGCalClusterT<l1t::HGCalCluster>(clusterSeed)
 {
+  this->setClusterStep(ClusterStep::StepMulticluster);
 }
 
 

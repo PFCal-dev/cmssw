@@ -12,7 +12,9 @@ namespace l1t {
     
     public:
        
-      HGCalMulticluster(){}
+      HGCalMulticluster(){
+	this->setClusterStep(ClusterStep::StepMulticluster);
+      }
       HGCalMulticluster( const LorentzVector p4,
           int pt=0,
           int eta=0,

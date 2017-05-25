@@ -19,6 +19,11 @@ namespace l1t
       typedef typename edm::PtrVector<C>::const_iterator const_iterator;
 
     public:
+      /* enum to indicate the step of the hardware */
+      enum class ClusterStep { StepCluster, StepMulticluster };
+      /* enum to indicate the type of the clustering algorithm */
+      enum class ClusterType { Type3D, Type2D };      
+
       HGCalClusterT(){}
       HGCalClusterT( const LorentzVector p4,
           int pt=0,
@@ -53,16 +58,17 @@ namespace l1t
           detId_ = HGCalDetId(c->detId());
           seedMipPt_ = c->mipPt();
         }
-
 	
 	if(clusterXmin_ > c->position().x()){
 	  clusterXmin_ = c->position().x();
-	} else if(clusterXmax_ < c->position().x()){
+	}
+	if(clusterXmax_ < c->position().x()){
 	  clusterXmax_ = c->position().x();
 	}
 	if(clusterYmin_ > c->position().y()){
 	  clusterYmin_ = c->position().y();
-	} else if(clusterYmax_ < c->position().y()){
+	} 
+	if(clusterYmax_ < c->position().y()){
 	  clusterYmax_ = c->position().y();
 	}
 
@@ -99,8 +105,33 @@ namespace l1t
       bool valid() const { return valid_;}
       void setValid(bool valid) { valid_ = valid;}
       
-      double clusterXspread() const { return (clusterXmax_ - clusterXmin_);}
-      double clusterYspread() const { return (clusterYmax_ - clusterYmin_);}
+
+      double clusterXspread() const { 
+	if(cStep_ == ClusterStep::StepMulticluster && 1 == constituents_.size() ){
+	  return (HGCalClusterT(*(constituents_.begin()))).clusterXspread();
+	} else if (1 == constituents_.size() ){
+	  return minCellSpread; /* to be fixed! For the moment this is the assumed avarage size of single cell */
+	}
+	if (fabs(clusterXmax_ - clusterXmin_) < minCellSpread){
+	  return minCellSpread;
+	} else {
+	  return fabs(clusterXmax_ - clusterXmin_);
+	}
+	  
+      }
+      double clusterYspread() const {
+	if(cStep_ == ClusterStep::StepMulticluster && 1 == constituents_.size() ){
+	  return (HGCalClusterT(*(constituents_.begin()))).clusterYspread();
+	} else if (cStep_ == ClusterStep::StepCluster){
+	  return minCellSpread; /* to be fixed! For the moment this is the assumed avarage size of a single cell */
+	}
+	if (fabs(clusterYmax_ - clusterYmin_) < minCellSpread){
+	  return minCellSpread;
+	} else {
+	  return fabs(clusterYmax_ - clusterYmin_);
+	}
+      }
+
       double mipPt() const { return mipPt_; }
       double seedMipPt() const { return seedMipPt_; }
       uint32_t detId() const { return detId_.rawId(); }
@@ -145,6 +176,9 @@ namespace l1t
         else hOe = -1.;
         return hOe;
       }
+      void setClusterType(const ClusterType CT){cType_ = CT;};
+      void setClusterStep(const ClusterStep CS){cStep_ = CS;};
+
 
       uint32_t subdetId() const {return detId_.subdetId();} 
       uint32_t layer() const {return detId_.layer();}
@@ -264,8 +298,13 @@ namespace l1t
 
       double clusterYmin_ = 99999.;
       double clusterXmin_ = 99999.;
-      double clusterYmax_ = 0.;
-      double clusterXmax_ = 0.;
+      double clusterYmax_ = -99999.;
+      double clusterXmax_ = -99999.;
+
+      static constexpr double minCellSpread = 1.;
+      
+      ClusterType cType_ = ClusterType::Type2D;
+      ClusterStep cStep_ = ClusterStep::StepCluster;
 
       double mipPt_;
       double seedMipPt_;

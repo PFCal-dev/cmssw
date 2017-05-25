@@ -38,21 +38,19 @@ class HGCalHardwareInterface{
   
   static const DataFormatMap clusterDataMap_;
 
-  void initMap();
-
   /*the data format relies on 32-bit word */  
   static const int wordsize_ = 32;
 
 
   
   /* returns the part of the 32 bit word (which is defined by the LSB and size). Signed values are required to be converted in the decoder class.  */
-  short get32bitPart_(const std::uint32_t data32bit, const unsigned short lsb,    const unsigned short size) const;
+  short get32bitPart(const std::uint32_t data32bit, const unsigned short lsb,    const unsigned short size) const;
   
   /* deletes part of the 32-bit word, required for the set function */
-  void  del32bitPart_(std::uint32_t & data32bit,     const unsigned short lsb,    const unsigned short size) const;
+  void  del32bitPart(std::uint32_t & data32bit,     const unsigned short lsb,    const unsigned short size) const;
   
   /* sets part of the 32-bit data word */ 
-  void  set32bitPart_(std::uint32_t & data32bit,     const std::int32_t bitvalue, const unsigned short lsb, const unsigned short size ) const;
+  void  set32bitPart(std::uint32_t & data32bit,     const std::int32_t bitvalue, const unsigned short lsb, const unsigned short size ) const;
   
 };
 
