@@ -20,7 +20,7 @@ namespace l1t
 
     public:
       /* enum to indicate the step of the hardware */
-      enum class ClusterStep { StepCluster, StepMulticluster };
+      enum class ClusterStep { FirstLayer, SecondLayer };
       /* enum to indicate the type of the clustering algorithm */
       enum class ClusterType { Type3D, Type2D };      
 
@@ -107,7 +107,7 @@ namespace l1t
       
 
       double clusterXspread() const { 
-	if(cStep_ == ClusterStep::StepMulticluster && 1 == constituents_.size() ){
+	if(cStep_ == ClusterStep::SecondLayer && 1 == constituents_.size() ){
 	  return (HGCalClusterT(*(constituents_.begin()))).clusterXspread();
 	} else if (1 == constituents_.size() ){
 	  return minCellSpread; /* to be fixed! For the moment this is the assumed avarage size of single cell */
@@ -120,9 +120,9 @@ namespace l1t
 	  
       }
       double clusterYspread() const {
-	if(cStep_ == ClusterStep::StepMulticluster && 1 == constituents_.size() ){
+	if(cStep_ == ClusterStep::SecondLayer && 1 == constituents_.size() ){
 	  return (HGCalClusterT(*(constituents_.begin()))).clusterYspread();
-	} else if (cStep_ == ClusterStep::StepCluster){
+	} else if (cStep_ == ClusterStep::FirstLayer){
 	  return minCellSpread; /* to be fixed! For the moment this is the assumed avarage size of a single cell */
 	}
 	if (fabs(clusterYmax_ - clusterYmin_) < minCellSpread){
@@ -178,7 +178,8 @@ namespace l1t
       }
       void setClusterType(const ClusterType CT){cType_ = CT;};
       void setClusterStep(const ClusterStep CS){cStep_ = CS;};
-
+      ClusterType clusterType() const {return cType_;};
+      ClusterStep clusterStep() const {return cStep_;};
 
       uint32_t subdetId() const {return detId_.subdetId();} 
       uint32_t layer() const {return detId_.layer();}
@@ -304,7 +305,7 @@ namespace l1t
       static constexpr double minCellSpread = 1.;
       
       ClusterType cType_ = ClusterType::Type2D;
-      ClusterStep cStep_ = ClusterStep::StepCluster;
+      ClusterStep cStep_ = ClusterStep::FirstLayer;
 
       double mipPt_;
       double seedMipPt_;

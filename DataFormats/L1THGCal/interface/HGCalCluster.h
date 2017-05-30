@@ -13,7 +13,9 @@ namespace l1t {
     
     public:
        
-      HGCalCluster(){}
+      HGCalCluster(){
+        this->setClusterStep(ClusterStep::FirstLayer);
+      }
       HGCalCluster( const LorentzVector p4,
           int pt=0,
           int eta=0,
