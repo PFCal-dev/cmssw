@@ -9,6 +9,7 @@ HGCalCluster::HGCalCluster( const LorentzVector p4,
    : HGCalClusterT<l1t::HGCalTriggerCell>(p4, pt, eta, phi),
    module_(0)
 {
+  this->setClusterStep(ClusterStep::FirstLayer);
 }
 
 
@@ -16,6 +17,7 @@ HGCalCluster::HGCalCluster( const edm::Ptr<l1t::HGCalTriggerCell> &tcSeed )
     : HGCalClusterT<l1t::HGCalTriggerCell>(tcSeed),
     module_(0)
 {
+    this->setClusterStep(ClusterStep::FirstLayer);
 }
 
 

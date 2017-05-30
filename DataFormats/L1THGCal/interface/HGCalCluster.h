@@ -13,7 +13,9 @@ namespace l1t {
     
     public:
        
-      HGCalCluster(){}
+      HGCalCluster(){
+        this->setClusterStep(ClusterStep::FirstLayer);
+      }
       HGCalCluster( const LorentzVector p4,
           int pt=0,
           int eta=0,
@@ -26,8 +28,7 @@ namespace l1t {
 
       void setModule(uint32_t module) {module_ = module;}
       uint32_t module() const {return module_;}
-
-
+      
     private:
       uint32_t module_;
       

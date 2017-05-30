@@ -12,7 +12,9 @@ namespace l1t {
     
     public:
        
-      HGCalMulticluster(){}
+      HGCalMulticluster(){
+	this->setClusterStep(ClusterStep::SecondLayer);
+      }
       HGCalMulticluster( const LorentzVector p4,
           int pt=0,
           int eta=0,
@@ -22,8 +24,9 @@ namespace l1t {
       HGCalMulticluster( const edm::Ptr<l1t::HGCalCluster> &tc );
       
       ~HGCalMulticluster();
-
-
+      
+    private:
+            
   };
     
   typedef BXVector<HGCalMulticluster> HGCalMulticlusterBxCollection;  
