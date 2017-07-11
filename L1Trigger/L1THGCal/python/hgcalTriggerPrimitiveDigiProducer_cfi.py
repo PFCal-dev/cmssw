@@ -11,7 +11,7 @@ tdcNbits = digiparam.hgceeDigitizer.digiCfg.feCfg.tdcNbits
 tdcOnset_fC = digiparam.hgceeDigitizer.digiCfg.feCfg.tdcOnset_fC
 # Reco calibration parameters
 fCPerMIPee = recoparam.HGCalUncalibRecHit.HGCEEConfig.fCPerMIP
-fCperMIPfh = recoparam.HGCalUncalibRecHit.HGCHEFConfig.fCPerMIP
+fCPerMIPfh = recoparam.HGCalUncalibRecHit.HGCHEFConfig.fCPerMIP
 layerWeights = recocalibparam.HGCalRecHit.layerWeights
 thicknessCorrection = recocalibparam.HGCalRecHit.thicknessCorrection
 
@@ -19,9 +19,17 @@ thicknessCorrection = recocalibparam.HGCalRecHit.thicknessCorrection
 triggerCellLsbBeforeCompression = 100./1024.
 triggerCellTruncationBits = 0
 
+# Equalization in the frontend of the sensor responses to 200um sensors
+frontend_thickness_corrections = [1./(c1*c2) for c1,c2 in zip(fCPerMIPee,thicknessCorrection)]
+c200 = frontend_thickness_corrections[1]
+frontend_thickness_corrections = [c/c200 for c in frontend_thickness_corrections]
+fCPerMIP_200 = fCPerMIPee[1]
+thicknessCorrection_200 = thicknessCorrection[1]
+
 fe_codec = cms.PSet( CodecName  = cms.string('HGCalTriggerCellThresholdCodec'),
                      CodecIndex = cms.uint32(2),
-                     MaxCellsInModule = cms.uint32(116),
+                     #  MaxCellsInModule = cms.uint32(116),
+                     MaxCellsInModule = cms.uint32(288),
                      DataLength = cms.uint32(16),
                      linLSB = cms.double(triggerCellLsbBeforeCompression),
                      triggerCellTruncationBits = cms.uint32(triggerCellTruncationBits),
@@ -32,14 +40,14 @@ fe_codec = cms.PSet( CodecName  = cms.string('HGCalTriggerCellThresholdCodec'),
                      adcnBits = adcNbits,
                      tdcsaturation = tdcSaturation_fC,
                      tdcnBits = tdcNbits,
-                     tdcOnsetfC = tdcOnset_fC
+                     tdcOnsetfC = tdcOnset_fC,
+                     ThicknessCorrections = cms.vdouble(frontend_thickness_corrections)
                      )
 
 calib_parValues = cms.PSet( cellLSB =  cms.double( triggerCellLsbBeforeCompression*(2**triggerCellTruncationBits) ),
-                             fCperMIPee = fCPerMIPee,
-                             fCperMIPfh = fCperMIPfh,
+                             fCperMIP = cms.double(fCPerMIP_200),
                              dEdXweights = layerWeights,
-                             thickCorr = thicknessCorrection
+                             thickCorr = cms.double(thicknessCorrection_200)
                             )
 C2d_parValues = cms.PSet( seeding_threshold = cms.double(5), # MipT
                           clustering_threshold = cms.double(2), # MipT
