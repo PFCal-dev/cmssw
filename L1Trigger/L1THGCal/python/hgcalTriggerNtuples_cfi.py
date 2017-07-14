@@ -10,6 +10,12 @@ ntuple_gen = cms.PSet(
     GenParticles = cms.InputTag('genParticles')
 )
 
+ntuple_gentau = cms.PSet(
+    NtupleName = cms.string('HGCalTriggerNtupleGenTau'),
+    GenParticles = cms.InputTag('genParticles'),
+    isPythia8 = cms.bool(True)
+)
+
 ntuple_genjet = cms.PSet(
     NtupleName = cms.string('HGCalTriggerNtupleGenJet'),
     GenJets = cms.InputTag('ak4GenJetsNoNu')
