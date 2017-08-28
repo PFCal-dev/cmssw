@@ -12,7 +12,7 @@
 #include "SimDataFormats/CaloHit/interface/PCaloHit.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
 #include "SimDataFormats/CaloTest/interface/HGCalTestNumbering.h"
-#include "DataFormats/HcalDetId/interface/HcalTestNumbering.h"
+#include "Geometry/HcalCommonData/interface/HcalHitRelabeller.h"
 
 class HGCalTriggerNtupleHGCDigis : public HGCalTriggerNtupleBase
 {
@@ -167,6 +167,7 @@ fill(const edm::Event& e, const edm::EventSetup& es)
     bhdigi_z_.reserve(bhdigi_n_);
     if (is_Simhit_comp_) bhdigi_simenergy_.reserve(bhdigi_n_);
     
+    const int kIntimeSample = 2;
     for(const auto& digi : ee_digis)
       {
         const HGCalDetId id(digi.id());
@@ -181,9 +182,9 @@ fill(const edm::Event& e, const edm::EventSetup& es)
         hgcdigi_eta_.emplace_back(cellpos.eta());
         hgcdigi_phi_.emplace_back(cellpos.phi());
         hgcdigi_z_.emplace_back(cellpos.z());
-        hgcdigi_data_.emplace_back(digi[2].data()); 
+        hgcdigi_data_.emplace_back(digi[kIntimeSample].data()); 
         int is_adc=0;
-        if (!(digi[2].mode())) is_adc =1;
+        if (!(digi[kIntimeSample].mode())) is_adc =1;
         hgcdigi_isadc_.emplace_back(is_adc);
         if (is_Simhit_comp_) {
           double hit_energy=0;
@@ -207,9 +208,9 @@ fill(const edm::Event& e, const edm::EventSetup& es)
         hgcdigi_eta_.emplace_back(cellpos.eta());
         hgcdigi_phi_.emplace_back(cellpos.phi());
         hgcdigi_z_.emplace_back(cellpos.z());
-        hgcdigi_data_.emplace_back(digi[2].data()); 
+        hgcdigi_data_.emplace_back(digi[kIntimeSample].data()); 
         int is_adc=0;
-        if (!(digi[2].mode())) is_adc =1;
+        if (!(digi[kIntimeSample].mode())) is_adc =1;
         hgcdigi_isadc_.emplace_back(is_adc);
         if (is_Simhit_comp_) {
           double hit_energy=0;
@@ -232,7 +233,7 @@ fill(const edm::Event& e, const edm::EventSetup& es)
         bhdigi_eta_.emplace_back(cellpos.eta());
         bhdigi_phi_.emplace_back(cellpos.phi());
         bhdigi_z_.emplace_back(cellpos.z());
-        bhdigi_data_.emplace_back(digi[2].data()); 
+        bhdigi_data_.emplace_back(digi[kIntimeSample].data()); 
         if (is_Simhit_comp_) {
           double hit_energy=0;
           auto itr = simhits_bh.find(id);
@@ -290,13 +291,10 @@ simhits(const edm::Event& e, std::unordered_map<uint32_t, double>& simhits_ee, s
         itr_insert.first->second += simhit.energy();
       }      
       //  BH
-      int z=0, depth0=0, eta0=0, phi0=0, lay=0;
       for( const auto& simhit : bh_simhits ) { 
-	HcalTestNumbering::unpackHcalIndex(simhit.id(), subdet, z, depth0, eta0, phi0, lay);
-	int sign = (z==0 ? -1 : 1);
-	HcalDDDRecConstants::HcalID tempid = triggerGeometry_->bhTopology().dddConstants()->getHCID(subdet, sign*eta0, phi0, lay, depth0);
-	if (subdet!=HcalEndcap) continue;
-        auto itr_insert = simhits_bh.emplace(HcalDetId(HcalEndcap,sign*tempid.eta,tempid.phi,tempid.depth), 0.);
+        HcalDetId id = HcalHitRelabeller::relabel(simhit.id(), triggerGeometry_->bhTopology().dddConstants());
+        if (id.subdetId()!=HcalEndcap) continue;
+        auto itr_insert = simhits_bh.emplace(id, 0.);
         itr_insert.first->second += simhit.energy();
       }      
 }

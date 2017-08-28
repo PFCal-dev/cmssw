@@ -30,10 +30,10 @@ thicknessCorrection_200 = thicknessCorrection[1]
 
 fe_codec = cms.PSet( CodecName  = cms.string('HGCalTriggerCellThresholdCodec'),
                      CodecIndex = cms.uint32(2),
-                     #  MaxCellsInModule = cms.uint32(116),
                      MaxCellsInModule = cms.uint32(288),
                      DataLength = cms.uint32(20),
                      linLSB = cms.double(triggerCellLsbBeforeCompression),
+                     linnBits = cms.uint32(16),
                      triggerCellTruncationBits = cms.uint32(triggerCellTruncationBits),
                      NData = cms.uint32(999),
                      TCThreshold_fC = cms.double(1.),

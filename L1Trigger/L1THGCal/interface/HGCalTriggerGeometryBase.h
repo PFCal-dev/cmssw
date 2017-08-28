@@ -37,7 +37,7 @@ class HGCalTriggerGeometryBase
         const HcalGeometry& bhGeometry() const {return *static_cast<const HcalGeometry*>(calo_geometry_->getSubdetectorGeometry(DetId::Hcal,HcalEndcap));}
         const HGCalTopology& eeTopology() const {return eeGeometry().topology();}
         const HGCalTopology& fhTopology() const {return fhGeometry().topology();}
-       const HcalTopology& bhTopology() const {return bhGeometry().topology();}
+        const HcalTopology& bhTopology() const {return bhGeometry().topology();}
 
         // non-const access to the geometry class
         virtual void initialize(const edm::ESHandle<CaloGeometry>&) = 0;
@@ -61,6 +61,7 @@ class HGCalTriggerGeometryBase
         virtual GlobalPoint getModulePosition(const unsigned module_det_id) const = 0;
 
         virtual bool validTriggerCell( const unsigned trigger_cell_id) const = 0;
+        virtual bool disconnectedModule(const unsigned module_id) const = 0;
 
     protected:
         void setCaloGeometry(const edm::ESHandle<CaloGeometry>& geom) {calo_geometry_=geom;}
