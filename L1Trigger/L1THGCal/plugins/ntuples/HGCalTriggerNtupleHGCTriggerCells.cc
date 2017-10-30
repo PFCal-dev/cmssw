@@ -49,6 +49,8 @@ class HGCalTriggerNtupleHGCTriggerCells : public HGCalTriggerNtupleBase
     std::vector<float> tc_eta_;
     std::vector<float> tc_phi_;
     std::vector<float> tc_pt_;
+    std::vector<float> tc_x_;
+    std::vector<float> tc_y_;
     std::vector<float> tc_z_;
     std::vector<uint32_t> tc_cluster_id_;
     std::vector<uint32_t> tc_multicluster_id_;
@@ -97,6 +99,8 @@ initialize(TTree& tree, const edm::ParameterSet& conf, edm::ConsumesCollector&& 
   tree.Branch("tc_eta", &tc_eta_);
   tree.Branch("tc_phi", &tc_phi_);
   tree.Branch("tc_pt", &tc_pt_);
+  tree.Branch("tc_x", &tc_x_);
+  tree.Branch("tc_y", &tc_y_);
   tree.Branch("tc_z", &tc_z_);
   tree.Branch("tc_cluster_id", &tc_cluster_id_);
   tree.Branch("tc_multicluster_id", &tc_multicluster_id_);
@@ -174,6 +178,8 @@ fill(const edm::Event& e, const edm::EventSetup& es)
       tc_eta_.emplace_back(tc_itr->eta());
       tc_phi_.emplace_back(tc_itr->phi());
       tc_pt_.emplace_back(tc_itr->pt());
+      tc_x_.emplace_back(tc_itr->position().x());
+      tc_y_.emplace_back(tc_itr->position().y());
       tc_z_.emplace_back(tc_itr->position().z());
       // Links between TC and clusters
       tc_cluster_id_.emplace_back(cl_id);
@@ -291,6 +297,8 @@ clear()
   tc_eta_.clear();
   tc_phi_.clear();
   tc_pt_.clear();
+  tc_x_.clear();
+  tc_y_.clear();
   tc_z_.clear();
   tc_cluster_id_.clear();
   tc_multicluster_id_.clear();
