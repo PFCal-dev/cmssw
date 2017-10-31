@@ -25,8 +25,8 @@ class HGCalTriggerNtupleHGCClusters : public HGCalTriggerNtupleBase
     edm::EDGetToken clusters_token_, multiclusters_token_;
 
     int cl_n_ ;
-    std::vector<float> cl_mipPt_;
     std::vector<uint32_t> cl_id_;
+    std::vector<float> cl_mipPt_;
     std::vector<float> cl_pt_;
     std::vector<float> cl_energy_;
     std::vector<float> cl_eta_;
@@ -59,8 +59,8 @@ initialize(TTree& tree, const edm::ParameterSet& conf, edm::ConsumesCollector&& 
   multiclusters_token_ = collector.consumes<l1t::HGCalMulticlusterBxCollection>(conf.getParameter<edm::InputTag>("Multiclusters"));
 
   tree.Branch("cl_n", &cl_n_, "cl_n/I");
-  tree.Branch("cl_mipPt", &cl_mipPt_);
   tree.Branch("cl_id", &cl_id_);
+  tree.Branch("cl_mipPt", &cl_mipPt_);
   tree.Branch("cl_pt", &cl_pt_);
   tree.Branch("cl_energy", &cl_energy_);
   tree.Branch("cl_eta", &cl_eta_);
