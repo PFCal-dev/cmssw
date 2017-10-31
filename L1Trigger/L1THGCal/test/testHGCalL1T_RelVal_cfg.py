@@ -11,8 +11,8 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-process.load('Configuration.Geometry.GeometryExtended2023D17Reco_cff')
-process.load('Configuration.Geometry.GeometryExtended2023D17_cff')
+process.load('Configuration.Geometry.GeometryExtended2023D14Reco_cff')
+process.load('Configuration.Geometry.GeometryExtended2023D14_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC14TeV_cfi')
@@ -31,7 +31,7 @@ process.maxEvents = cms.untracked.PSet(
 
 # Input source
 process.source = cms.Source("PoolSource",
-       fileNames = cms.untracked.vstring('/store/relval/CMSSW_9_1_1_patch1/RelValZEE_14/GEN-SIM-DIGI-RAW/91X_upgrade2023_realistic_v1_D17-v1/10000/38679F3C-B04A-E711-9C7F-0CC47A4D7636.root') )
+       fileNames = cms.untracked.vstring('/store/mc/PhaseIISpring17D/TTbar_14TeV_TuneCUETP8M1_PhaseIIFall16/GEN-SIM-DIGI-RAW/NoPU_pilot_90X_upgrade2023_realistic_v9-v2/120000/3CCB5D1B-1446-E711-8166-001E67792742.root') )
 
 process.options = cms.untracked.PSet(
 
@@ -58,8 +58,8 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic', '')
 process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
 process.hgcl1tpg_step = cms.Path(process.hgcalTriggerPrimitives)
 # Change to V7 trigger geometry for older samples
-#  from L1Trigger.L1THGCal.customTriggerGeometry import custom_geometry_ZoltanSplit_V7
-#  process = custom_geometry_ZoltanSplit_V7(process)
+from L1Trigger.L1THGCal.customTriggerGeometry import custom_geometry_ZoltanSplit_V7
+process = custom_geometry_ZoltanSplit_V7(process)
 
 # load ntuplizer
 process.load('L1Trigger.L1THGCal.hgcalTriggerNtuples_cff')
