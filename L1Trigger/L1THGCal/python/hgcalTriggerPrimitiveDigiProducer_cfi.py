@@ -15,7 +15,7 @@ adcNbitsBH = digiparam.hgchebackDigitizer.digiCfg.feCfg.adcNbits
 # Reco calibration parameters
 fCPerMIPee = recoparam.HGCalUncalibRecHit.HGCEEConfig.fCPerMIP
 fCPerMIPfh = recoparam.HGCalUncalibRecHit.HGCHEFConfig.fCPerMIP
-layerWeights = recocalibparam.HGCalRecHit.layerWeights
+layerWeights = layercalibparam.TrgLayer_dEdX_weights
 thicknessCorrection = recocalibparam.HGCalRecHit.thicknessCorrection
 
 # Parameters used in several places
@@ -37,8 +37,8 @@ fe_codec = cms.PSet( CodecName  = cms.string('HGCalTriggerCellThresholdCodec'),
                      linnBits = cms.uint32(16),
                      triggerCellTruncationBits = cms.uint32(triggerCellTruncationBits),
                      NData = cms.uint32(999),
-                     TCThreshold_fC = cms.double(1.),
-                     TCThresholdBH_MIP = cms.double(1.),
+                     TCThreshold_fC = cms.double(0.),
+                     TCThresholdBH_MIP = cms.double(0.),
                      #take the following parameters from the digitization config file
                      adcsaturation = adcSaturation_fC,
                      adcnBits = adcNbits,
@@ -61,8 +61,10 @@ C2d_parValues = cms.PSet( seeding_threshold_silicon = cms.double(5), # MipT
                           seeding_threshold_scintillator = cms.double(5), # MipT
                           clustering_threshold_silicon = cms.double(2), # MipT
                           clustering_threshold_scintillator = cms.double(2), # MipT
-                          dR_cluster = cms.double(3.), # in cm
-                          clusterType = cms.string('NNC2d') # clustering type: dRC2d--> Geometric-dR clustering; NNC2d-->Nearest Neighbors clustering
+                          dR_cluster = cms.double(6.), # in cm
+                          clusterType = cms.string('NNC2d') # clustering type: dRC2d--> Geometric-dR clustering; NNC2d-->Nearest Neighbors clustering; dRNNC2d-->Limited Nearest Neighbors clustering
+#                          clusterType = cms.string('dRC2d') # clustering type: dRC2d--> Geometric-dR clustering; NNC2d-->Nearest Neighbors clustering; dRNNC2d-->Limited Nearest Neighbors clustering
+#                          clusterType = cms.string('dRNNC2d') # clustering type: dRC2d--> Geometric-dR clustering; NNC2d-->Nearest Neighbors clustering; dRNNC2d-->Limited Nearest Neighbors clustering
                           )
 
 C3d_parValues = cms.PSet( dR_multicluster = cms.double(0.01), # dR in normalized plane used to clusterize C2d
