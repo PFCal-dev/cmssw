@@ -76,13 +76,22 @@ C3d_parValues = cms.PSet( dR_multicluster = cms.double(0.01), # dR in normalized
                           dist_dbscan_multicluster = cms.double(0.005),
                           minN_dbscan_multicluster = cms.uint32(3)
                           )
+
+TowerMap_parValues = cms.PSet( nEtaBins = cms.uint32(18),
+                               nPhiBins = cms.uint32(72),
+                               etaBins = cms.vdouble(),
+                               phiBins = cms.vdouble(),
+                               layerWeights = layercalibparam.TrgLayer_weights
+                               )
+
 cluster_algo =  cms.PSet( AlgorithmName = cms.string('HGCClusterAlgoThreshold'),
                           FECodec = fe_codec.clone(),
                           calib_parameters = calib_parValues.clone(),
                           triggercell_threshold_silicon = cms.double(2.), # MipT
                           triggercell_threshold_scintillator = cms.double(2.), # MipT
                           C2d_parameters = C2d_parValues.clone(),
-                          C3d_parameters = C3d_parValues.clone()
+                          C3d_parameters = C3d_parValues.clone(),
+                          TowerMap_parameters = TowerMap_parValues.clone()
                           )
 
 hgcalTriggerPrimitiveDigiProducer = cms.EDProducer(

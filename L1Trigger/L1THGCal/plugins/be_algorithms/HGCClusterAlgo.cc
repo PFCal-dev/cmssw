@@ -9,7 +9,9 @@
 #include "L1Trigger/L1THGCal/interface/fe_codecs/HGCalTriggerCellThresholdCodec.h"
 #include "L1Trigger/L1THGCal/interface/be_algorithms/HGCalTriggerCellCalibration.h"
 #include "L1Trigger/L1THGCal/interface/be_algorithms/HGCalClusteringImpl.h"
-#include "L1Trigger/L1THGCal/interface/be_algorithms/HGCalMulticlusteringImpl.h"    
+#include "L1Trigger/L1THGCal/interface/be_algorithms/HGCalMulticlusteringImpl.h"
+#include "L1Trigger/L1THGCal/interface/be_algorithms/HGCalTowerMap2DImpl.h"
+#include "L1Trigger/L1THGCal/interface/be_algorithms/HGCalTowerMap3DImpl.h"
 
 using namespace HGCalTriggerBackend;
 
@@ -41,9 +43,13 @@ class HGCClusterAlgo : public Algorithm<FECODEC>
         trgcell_product_( new l1t::HGCalTriggerCellBxCollection ),
         cluster_product_( new l1t::HGCalClusterBxCollection ),
         multicluster_product_( new l1t::HGCalMulticlusterBxCollection ),
+        towerMap2Dcluster_product_( new l1t::HGCalClusterBxCollection ),
+        towerMap3Dcluster_product_( new l1t::HGCalMulticlusterBxCollection ),
         calibration_( conf.getParameterSet("calib_parameters") ),
         clustering_( conf.getParameterSet("C2d_parameters") ),
         multiclustering_( conf.getParameterSet("C3d_parameters" ) ),
+        towerMap2Dclustering_( conf.getParameterSet("TowerMap_parameters") ),
+        towerMap3Dclustering_( conf.getParameterSet("TowerMap_parameters" ) ),
         triggercell_threshold_silicon_( conf.getParameter<double>("triggercell_threshold_silicon") ),
         triggercell_threshold_scintillator_( conf.getParameter<double>("triggercell_threshold_scintillator") )
         {
@@ -77,6 +83,8 @@ class HGCClusterAlgo : public Algorithm<FECODEC>
             prod.produces<l1t::HGCalTriggerCellBxCollection>( "calibratedTriggerCells" );            
             prod.produces<l1t::HGCalClusterBxCollection>( "cluster2D" );
             prod.produces<l1t::HGCalMulticlusterBxCollection>( "cluster3D" );   
+            prod.produces<l1t::HGCalClusterBxCollection>( "towerMap2D" );
+            prod.produces<l1t::HGCalMulticlusterBxCollection>( "towerMap3D" );
         }
             
         virtual void run(const l1t::HGCFETriggerDigiCollection& coll, const edm::EventSetup& es, edm::Event&evt ) override final;
@@ -93,6 +101,8 @@ class HGCClusterAlgo : public Algorithm<FECODEC>
             trgcell_product_.reset( new l1t::HGCalTriggerCellBxCollection );            
             cluster_product_.reset( new l1t::HGCalClusterBxCollection );
             multicluster_product_.reset( new l1t::HGCalMulticlusterBxCollection );
+            towerMap2Dcluster_product_.reset( new l1t::HGCalClusterBxCollection );
+            towerMap3Dcluster_product_.reset( new l1t::HGCalMulticlusterBxCollection );
         }
 
     
@@ -102,6 +112,8 @@ class HGCClusterAlgo : public Algorithm<FECODEC>
         std::unique_ptr<l1t::HGCalTriggerCellBxCollection> trgcell_product_;
         std::unique_ptr<l1t::HGCalClusterBxCollection> cluster_product_;
         std::unique_ptr<l1t::HGCalMulticlusterBxCollection> multicluster_product_;
+        std::unique_ptr<l1t::HGCalClusterBxCollection> towerMap2Dcluster_product_;
+        std::unique_ptr<l1t::HGCalMulticlusterBxCollection> towerMap3Dcluster_product_;
     
         edm::ESHandle<HGCalTriggerGeometryBase> triggerGeometry_;
 
@@ -109,6 +121,8 @@ class HGCClusterAlgo : public Algorithm<FECODEC>
         HGCalTriggerCellCalibration calibration_;
         HGCalClusteringImpl clustering_;
         HGCalMulticlusteringImpl multiclustering_;
+        HGCalTowerMap2DImpl towerMap2Dclustering_;
+        HGCalTowerMap3DImpl towerMap3Dclustering_;
 
         /* algorithm type */
         ClusterType clusteringAlgorithmType_;
@@ -153,6 +167,8 @@ void HGCClusterAlgo<FECODEC,DATA>::run(const l1t::HGCFETriggerDigiCollection & c
     edm::OrphanHandle<l1t::HGCalTriggerCellBxCollection> triggerCellsHandle;
     edm::OrphanHandle<l1t::HGCalClusterBxCollection> clustersHandle;
     edm::OrphanHandle<l1t::HGCalMulticlusterBxCollection> multiclustersHandle;
+    edm::OrphanHandle<l1t::HGCalClusterBxCollection> towerMap2DclustersHandle;
+    edm::OrphanHandle<l1t::HGCalMulticlusterBxCollection> towerMap3DclustersHandle;
     
     /* retrieve the orphan handle to the trigger-cells collection and put the collection in the event */
     triggerCellsHandle = evt.put( std::move( trgcell_product_ ), "calibratedTriggerCells");
@@ -206,6 +222,26 @@ void HGCClusterAlgo<FECODEC,DATA>::run(const l1t::HGCFETriggerDigiCollection & c
     /* retrieve the orphan handle to the multiclusters collection and put the collection in the event */
     multiclustersHandle = evt.put( std::move( multicluster_product_ ), "cluster3D");
 
+
+    /* call to towerMap 2d clustering */
+    towerMap2Dclustering_.buildTowerMapClusters( triggerCellsPtrs, *towerMap2Dcluster_product_);
+
+    /* retrieve the orphan handle to the clusters collection and put the collection in the event */
+    towerMap2DclustersHandle = evt.put( std::move( towerMap2Dcluster_product_ ), "towerMap2D");
+
+    /* create a persistent vector of pointers to the clusters */
+    std::vector<edm::Ptr<l1t::HGCalCluster>> towerMap2DclustersPtrs;
+    for( unsigned i = 0; i < towerMap2DclustersHandle->size(); ++i ) {
+        edm::Ptr<l1t::HGCalCluster> ptr(towerMap2DclustersHandle,i);
+        towerMap2DclustersPtrs.push_back(ptr);
+    }
+
+
+    /* call to towerMap 3d clustering */
+    towerMap3Dclustering_.buildTowerMapMulticlusters( towerMap2DclustersPtrs, *towerMap3Dcluster_product_);
+
+    /* retrieve the orphan handle to the multiclusters collection and put the collection in the event */
+    towerMap3DclustersHandle = evt.put( std::move( towerMap3Dcluster_product_ ), "towerMap3D");
 
 
 }

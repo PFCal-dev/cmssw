@@ -77,6 +77,11 @@ ntuple_multicluster = cms.PSet(
     Multiclusters = cms.InputTag('hgcalTriggerPrimitiveDigiProducer:cluster3D')
 )
 
+ntuple_towermap = cms.PSet(
+    NtupleName = cms.string('HGCalTriggerNtupleHGCTowerMaps'),
+    TowerMaps = cms.InputTag('hgcalTriggerPrimitiveDigiProducer:towerMap3D')
+)
+
 ntuple_panels = cms.PSet(
     NtupleName = cms.string('HGCalTriggerNtupleHGCPanels'),
     TriggerCells = cms.InputTag('hgcalTriggerPrimitiveDigiProducer:calibratedTriggerCells')
@@ -92,6 +97,7 @@ hgcalTriggerNtuplizer = cms.EDAnalyzer(
         ntuple_digis,
         ntuple_triggercells,
         ntuple_clusters,
-        ntuple_multicluster
+        ntuple_multicluster,
+        ntuple_towermap
     )
 )
