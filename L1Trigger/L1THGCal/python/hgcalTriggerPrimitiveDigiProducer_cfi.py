@@ -61,21 +61,22 @@ C2d_parValues = cms.PSet( seeding_threshold_silicon = cms.double(5), # MipT
                           seeding_threshold_scintillator = cms.double(5), # MipT
                           clustering_threshold_silicon = cms.double(2), # MipT
                           clustering_threshold_scintillator = cms.double(2), # MipT
-                          dR_cluster = cms.double(6.), # in cm
-                          clusterType = cms.string('NNC2d'), # clustering type: dRC2d--> Geometric-dR clustering; NNC2d-->Nearest Neighbors clustering; dRNNC2d-->Limited Nearest Neighbors clustering
-#                          clusterType = cms.string('dRC2d') # clustering type: dRC2d--> Geometric-dR clustering; NNC2d-->Nearest Neighbors clustering; dRNNC2d-->Limited Nearest Neighbors clustering
-#                          clusterType = cms.string('dRNNC2d') # clustering type: dRC2d--> Geometric-dR clustering; NNC2d-->Nearest Neighbors clustering; dRNNC2d-->Limited Nearest Neighbors clustering
-                          calibSF_cluster = cms.double(1.084),
+                          clusterType = cms.string('NNC2d'), 
                           applyLayerCalibration = cms.bool(True),
-                          layerWeights = layercalibparam.TrgLayer_weights
+                          layerWeights = layercalibparam.TrgLayer_weights,
+                          # Parameters not used by this clustering
+                          dR_cluster=cms.double(0.),
+                          calibSF_cluster=cms.double(0.)
                           )
 
 C3d_parValues = cms.PSet( dR_multicluster = cms.double(0.01), # dR in normalized plane used to clusterize C2d
                           minPt_multicluster = cms.double(0.5), # minimum pt of the multicluster (GeV)
-                          type_multicluster = cms.string('dRC3d'), #'DBSCANC3d' for the DBSCAN algorithm 
-                          dist_dbscan_multicluster = cms.double(0.005),
-                          minN_dbscan_multicluster = cms.uint32(3)
-                          )
+                          type_multicluster = cms.string('dRC3d'),
+                          # Parameters not used by this clustering
+                          dist_dbscan_multicluster=cms.double(0.),
+                          minN_dbscan_multicluster=cms.uint32(0)
+)
+
 cluster_algo =  cms.PSet( AlgorithmName = cms.string('HGCClusterAlgoThreshold'),
                           FECodec = fe_codec.clone(),
                           calib_parameters = calib_parValues.clone(),
@@ -85,6 +86,20 @@ cluster_algo =  cms.PSet( AlgorithmName = cms.string('HGCClusterAlgoThreshold'),
                           C3d_parameters = C3d_parValues.clone()
                           )
 
+towerMap2D_parValues = cms.PSet( nEtaBins = cms.int32(18),
+                                 nPhiBins = cms.int32(72),
+                                 etaBins = cms.vdouble(),
+                                 phiBins = cms.vdouble(),
+                                 useLayerWeights = cms.bool(False),
+                                 layerWeights = cms.vdouble()
+                                 )
+
+tower_algo =  cms.PSet( AlgorithmName = cms.string('HGCTowerAlgoThreshold'),
+                        FECodec = fe_codec.clone(),
+                        calib_parameters = calib_parValues.clone(),
+                        towermap_parameters = towerMap2D_parValues.clone()
+                        )
+
 hgcalTriggerPrimitiveDigiProducer = cms.EDProducer(
     "HGCalTriggerDigiProducer",
     eeDigis = cms.InputTag('mix:HGCDigisEE'),
@@ -92,7 +107,8 @@ hgcalTriggerPrimitiveDigiProducer = cms.EDProducer(
     bhDigis = cms.InputTag('mix:HGCDigisHEback'),
     FECodec = fe_codec.clone(),
     BEConfiguration = cms.PSet( 
-        algorithms = cms.VPSet( cluster_algo )
+        algorithms = cms.VPSet( cluster_algo,
+                                tower_algo )
         )
     )
 
@@ -101,6 +117,7 @@ hgcalTriggerPrimitiveDigiFEReproducer = cms.EDProducer(
     feDigis = cms.InputTag('hgcalTriggerPrimitiveDigiProducer'),
     FECodec = fe_codec.clone(),
     BEConfiguration = cms.PSet( 
-        algorithms = cms.VPSet( cluster_algo )
+        algorithms = cms.VPSet( cluster_algo,
+                                tower_algo)
         )
     )

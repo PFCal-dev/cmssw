@@ -435,7 +435,7 @@ getTriggerCellPosition(const unsigned trigger_cell_det_id) const
         for(const auto& cell : cell_ids)
         {
             HcalDetId cellDetId(cell);
-            triggerCellVector += bhGeometry().getPosition(cellDetId).basicVector();
+            triggerCellVector += bhGeometry()->getPosition(cellDetId).basicVector();
         }
     }
     // EE or FH
@@ -444,7 +444,7 @@ getTriggerCellPosition(const unsigned trigger_cell_det_id) const
         for(const auto& cell : cell_ids)
         {
             HGCalDetId cellDetId(cell);
-            triggerCellVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry().getPosition(cellDetId) :  fhGeometry().getPosition(cellDetId)).basicVector();
+            triggerCellVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry()->getPosition(cellDetId) :  fhGeometry()->getPosition(cellDetId)).basicVector();
         }
     }
     return GlobalPoint( triggerCellVector/cell_ids.size() );
@@ -465,7 +465,7 @@ getModulePosition(const unsigned module_det_id) const
         for(const auto& cell : cell_ids)
         {
             HcalDetId cellDetId(cell);
-            moduleVector += bhGeometry().getPosition(cellDetId).basicVector();
+            moduleVector += bhGeometry()->getPosition(cellDetId).basicVector();
         }
     }
     // EE or FH
@@ -474,7 +474,7 @@ getModulePosition(const unsigned module_det_id) const
         for(const auto& cell : cell_ids)
         {
             HGCalDetId cellDetId(cell);
-            moduleVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry().getPosition(cellDetId) :  fhGeometry().getPosition(cellDetId)).basicVector();
+            moduleVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry()->getPosition(cellDetId) :  fhGeometry()->getPosition(cellDetId)).basicVector();
         }
     }
     return GlobalPoint( moduleVector/cell_ids.size() );
@@ -579,7 +579,7 @@ fillNeighborMaps(const edm::FileInPath& file,  std::unordered_map<int, std::set<
         std::vector<std::string> key_tokens {
             std::sregex_token_iterator(line.begin(), line.end(), key_regex), {}
         };
-        if(key_tokens.size()<1)
+        if(key_tokens.empty())
         {
             throw cms::Exception("BadGeometry")
                 << "Syntax error in the L1TCellNeighborsMapping:\n"

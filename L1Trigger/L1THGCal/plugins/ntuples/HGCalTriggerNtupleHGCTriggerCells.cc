@@ -70,7 +70,9 @@ DEFINE_EDM_PLUGIN(HGCalTriggerNtupleFactory,
 
 
 HGCalTriggerNtupleHGCTriggerCells::
-HGCalTriggerNtupleHGCTriggerCells(const edm::ParameterSet& conf):HGCalTriggerNtupleBase(conf)
+HGCalTriggerNtupleHGCTriggerCells(const edm::ParameterSet& conf):HGCalTriggerNtupleBase(conf),
+  fill_simenergy_(conf.getParameter<bool>("FillSimEnergy")),
+  filter_cells_in_multiclusters_(conf.getParameter<bool>("FilterCellsInMulticlusters"))
 {
   fill_simenergy_ = conf.getParameter<bool>("FillSimEnergy");
   filter_cells_in_multiclusters_ = conf.getParameter<bool>("FilterCellsInMulticlusters");
@@ -159,7 +161,7 @@ fill(const edm::Event& e, const edm::EventSetup& es)
     }
   }
 
-  triggerTools_.setEventSetup(es);
+  triggerTools_.eventSetup(es);
 
   clear();
   for(auto tc_itr=trigger_cells.begin(0); tc_itr!=trigger_cells.end(0); tc_itr++)
@@ -179,7 +181,7 @@ fill(const edm::Event& e, const edm::EventSetup& es)
       tc_id_.emplace_back(tc_itr->detId());
       tc_subdet_.emplace_back(id.subdetId());
       tc_side_.emplace_back(id.zside());
-      tc_layer_.emplace_back(triggerTools_.getLayerWithOffset(id));
+      tc_layer_.emplace_back(triggerTools_.layerWithOffset(id));
       tc_wafer_.emplace_back(id.wafer());
       tc_wafertype_.emplace_back(id.waferType());
       tc_cell_.emplace_back(id.cell());
@@ -262,53 +264,53 @@ void
 HGCalTriggerNtupleHGCTriggerCells::
 simhits(const edm::Event& e, std::unordered_map<uint32_t, double>& simhits_ee, std::unordered_map<uint32_t, double>& simhits_fh, std::unordered_map<uint32_t, double>& simhits_bh)
 {
-      edm::Handle<edm::PCaloHitContainer> ee_simhits_h;
-      e.getByToken(simhits_ee_token_,ee_simhits_h);
-      const edm::PCaloHitContainer& ee_simhits = *ee_simhits_h;
-      edm::Handle<edm::PCaloHitContainer> fh_simhits_h;
-      e.getByToken(simhits_fh_token_,fh_simhits_h);
-      const edm::PCaloHitContainer& fh_simhits = *fh_simhits_h;
-      edm::Handle<edm::PCaloHitContainer> bh_simhits_h;
-      e.getByToken(simhits_bh_token_,bh_simhits_h);
-      const edm::PCaloHitContainer& bh_simhits = *bh_simhits_h;
-      
-      //EE
-      int layer=0,cell=0, sec=0, subsec=0, zp=0,subdet=0;
-      ForwardSubdetector mysubdet;
-      for( const auto& simhit : ee_simhits )
-      { 
-        HGCalTestNumbering::unpackHexagonIndex(simhit.id(), subdet, zp, layer, sec, subsec, cell); 
-        mysubdet = (ForwardSubdetector)subdet;
-        std::pair<int,int> recoLayerCell = geometry_->eeTopology().dddConstants().simToReco(cell,layer,sec,geometry_->eeTopology().detectorType());
-        cell  = recoLayerCell.first;
-        layer = recoLayerCell.second;
-        if (layer<0 || cell<0) continue;
-        auto itr_insert = simhits_ee.emplace(HGCalDetId(mysubdet,zp,layer,subsec,sec,cell), 0.);
-        itr_insert.first->second += simhit.energy();
-      }
+  edm::Handle<edm::PCaloHitContainer> ee_simhits_h;
+  e.getByToken(simhits_ee_token_,ee_simhits_h);
+  const edm::PCaloHitContainer& ee_simhits = *ee_simhits_h;
+  edm::Handle<edm::PCaloHitContainer> fh_simhits_h;
+  e.getByToken(simhits_fh_token_,fh_simhits_h);
+  const edm::PCaloHitContainer& fh_simhits = *fh_simhits_h;
+  edm::Handle<edm::PCaloHitContainer> bh_simhits_h;
+  e.getByToken(simhits_bh_token_,bh_simhits_h);
+  const edm::PCaloHitContainer& bh_simhits = *bh_simhits_h;
 
-      //  FH
-      layer=0; cell=0; sec=0; subsec=0; zp=0; subdet=0;
-      for( const auto& simhit : fh_simhits ) 
-      { 
-        HGCalTestNumbering::unpackHexagonIndex(simhit.id(), subdet, zp, layer, sec, subsec, cell); 
-        mysubdet = (ForwardSubdetector)(subdet);
-        std::pair<int,int> recoLayerCell = geometry_->fhTopology().dddConstants().simToReco(cell,layer,sec,geometry_->fhTopology().detectorType());
-        cell  = recoLayerCell.first;
-        layer = recoLayerCell.second;
-        if (layer<0 || cell<0) continue;
-        auto itr_insert = simhits_fh.emplace(HGCalDetId(mysubdet,zp,layer,subsec,sec,cell), 0.);
-        itr_insert.first->second += simhit.energy();
-      }      
+  //EE
+  int layer=0,cell=0, sec=0, subsec=0, zp=0,subdet=0;
+  ForwardSubdetector mysubdet;
+  for( const auto& simhit : ee_simhits )
+  { 
+    HGCalTestNumbering::unpackHexagonIndex(simhit.id(), subdet, zp, layer, sec, subsec, cell); 
+    mysubdet = (ForwardSubdetector)subdet;
+    std::pair<int,int> recoLayerCell = geometry_->eeTopology().dddConstants().simToReco(cell,layer,sec,geometry_->eeTopology().detectorType());
+    cell  = recoLayerCell.first;
+    layer = recoLayerCell.second;
+    if (layer<0 || cell<0) continue;
+    auto itr_insert = simhits_ee.emplace(HGCalDetId(mysubdet,zp,layer,subsec,sec,cell), 0.);
+    itr_insert.first->second += simhit.energy();
+  }
 
-      //  BH
-      for( const auto& simhit : bh_simhits ) 
-      { 
-        HcalDetId id = HcalHitRelabeller::relabel(simhit.id(), geometry_->bhTopology().dddConstants());
-        if (id.subdetId()!=HcalEndcap) continue;
-        auto itr_insert = simhits_bh.emplace(id, 0.);
-        itr_insert.first->second += simhit.energy();
-      }      
+  //  FH
+  layer=0; cell=0; sec=0; subsec=0; zp=0; subdet=0;
+  for( const auto& simhit : fh_simhits ) 
+  { 
+    HGCalTestNumbering::unpackHexagonIndex(simhit.id(), subdet, zp, layer, sec, subsec, cell); 
+    mysubdet = (ForwardSubdetector)(subdet);
+    std::pair<int,int> recoLayerCell = geometry_->fhTopology().dddConstants().simToReco(cell,layer,sec,geometry_->fhTopology().detectorType());
+    cell  = recoLayerCell.first;
+    layer = recoLayerCell.second;
+    if (layer<0 || cell<0) continue;
+    auto itr_insert = simhits_fh.emplace(HGCalDetId(mysubdet,zp,layer,subsec,sec,cell), 0.);
+    itr_insert.first->second += simhit.energy();
+  }      
+
+  //  BH
+  for( const auto& simhit : bh_simhits ) 
+  { 
+    HcalDetId id = HcalHitRelabeller::relabel(simhit.id(), geometry_->bhTopology().dddConstants());
+    if (id.subdetId()!=HcalEndcap) continue;
+    auto itr_insert = simhits_bh.emplace(id, 0.);
+    itr_insert.first->second += simhit.energy();
+  }      
 }
 
 
