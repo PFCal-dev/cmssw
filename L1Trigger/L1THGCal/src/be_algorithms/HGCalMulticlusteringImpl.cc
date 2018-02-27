@@ -43,30 +43,30 @@ void HGCalMulticlusteringImpl::findNeighbor( const std::vector<std::pair<unsigne
                                              const std::vector<edm::Ptr<l1t::HGCalCluster>>& clustersPtrs, 
                                              std::vector<unsigned int>& neighbors
                                             ){
-  
-  if(clustersPtrs.size() <= searchInd || clustersPtrs.size() < rankedList.size()){
-    throw cms::Exception("IndexOutOfBound: clustersPtrs in 'findNeighbor'");
-  }
-  
-  for(unsigned int ind = searchInd+1; ind < rankedList.size() && fabs(rankedList.at(ind).second - rankedList.at(searchInd).second) < distDbscan_ ; ind++){
-  
-    if(clustersPtrs.size() <= rankedList.at(ind).first){
-      throw cms::Exception("IndexOutOfBound: clustersPtrs in 'findNeighbor'");
-   
-    } else if(((*(clustersPtrs[rankedList.at(ind).first])).centreProj() - (*(clustersPtrs[rankedList.at(searchInd).first])).centreProj()).mag() < distDbscan_){
-      neighbors.push_back(ind);
+
+    if(clustersPtrs.size() <= searchInd || clustersPtrs.size() < rankedList.size()){
+        throw cms::Exception("IndexOutOfBound: clustersPtrs in 'findNeighbor'");
     }
-  }
-  
-  for(unsigned int ind = 0; ind < searchInd && fabs(rankedList.at(searchInd).second - rankedList.at(ind).second) < distDbscan_ ; ind++){
-    
-    if(clustersPtrs.size() <= rankedList.at(ind).first){
-      throw cms::Exception("IndexOutOfBound: clustersPtrs in 'findNeighbor'");
-   
-    } else if(((*(clustersPtrs[rankedList.at(ind).first])).centreProj() - (*(clustersPtrs[rankedList.at(searchInd).first])).centreProj()).mag() < distDbscan_){
-      neighbors.push_back(ind);
+
+    for(unsigned int ind = searchInd+1; ind < rankedList.size() && fabs(rankedList.at(ind).second - rankedList.at(searchInd).second) < distDbscan_ ; ind++){
+
+        if(clustersPtrs.size() <= rankedList.at(ind).first){
+            throw cms::Exception("IndexOutOfBound: clustersPtrs in 'findNeighbor'");
+
+        } else if(((*(clustersPtrs[rankedList.at(ind).first])).centreProj() - (*(clustersPtrs[rankedList.at(searchInd).first])).centreProj()).mag() < distDbscan_){
+            neighbors.push_back(ind);
+        }
     }
-  }
+
+    for(unsigned int ind = 0; ind < searchInd && fabs(rankedList.at(searchInd).second - rankedList.at(ind).second) < distDbscan_ ; ind++){
+
+        if(clustersPtrs.size() <= rankedList.at(ind).first){
+            throw cms::Exception("IndexOutOfBound: clustersPtrs in 'findNeighbor'");
+
+        } else if(((*(clustersPtrs[rankedList.at(ind).first])).centreProj() - (*(clustersPtrs[rankedList.at(searchInd).first])).centreProj()).mag() < distDbscan_){
+            neighbors.push_back(ind);
+        }
+    }
 }
 
 
@@ -88,7 +88,7 @@ void HGCalMulticlusteringImpl::clusterizeDR( const std::vector<edm::Ptr<l1t::HGC
             }
             ++imclu;
         }
-        if( tcPertinentMulticlusters.size() == 0 ){
+        if( tcPertinentMulticlusters.empty() ){
             multiclustersTmp.emplace_back( *clu );
         }
         else{
@@ -110,8 +110,7 @@ void HGCalMulticlusteringImpl::clusterizeDR( const std::vector<edm::Ptr<l1t::HGC
     /* making the collection of multiclusters */
     for( unsigned i(0); i<multiclustersTmp.size(); ++i ){
 
-      // compute the eta, phi observables for multicluster starting from its barycenter x,y,z position + pT as scalar sum of pT of constituents
-
+        // compute the eta, phi observables for multicluster starting from its barycenter x,y,z position + pT as scalar sum of pT of constituents
         double sumPt=0.;
 
         const std::vector<edm::Ptr<l1t::HGCalCluster>> &pertinentClu = multiclustersTmp.at(i).constituents();
@@ -126,19 +125,19 @@ void HGCalMulticlusteringImpl::clusterizeDR( const std::vector<edm::Ptr<l1t::HGC
         if( multiclustersTmp.at(i).pt() > ptC3dThreshold_ ){
 
             //compute shower shape
-            multiclustersTmp.at(i).set_showerLength(shape_.showerLength(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_coreShowerLength(shape_.coreShowerLength(multiclustersTmp.at(i), triggerGeometry));
-            multiclustersTmp.at(i).set_firstLayer(shape_.firstLayer(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_maxLayer(shape_.maxLayer(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_sigmaEtaEtaTot(shape_.sigmaEtaEtaTot(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_sigmaEtaEtaMax(shape_.sigmaEtaEtaMax(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_sigmaPhiPhiTot(shape_.sigmaPhiPhiTot(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_sigmaPhiPhiMax(shape_.sigmaPhiPhiMax(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_sigmaZZ(shape_.sigmaZZ(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_sigmaRRTot(shape_.sigmaRRTot(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_sigmaRRMax(shape_.sigmaRRMax(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_sigmaRRMean(shape_.sigmaRRMean(multiclustersTmp.at(i)));
-            multiclustersTmp.at(i).set_eMax(shape_.eMax(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).showerLength(shape_.showerLength(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).coreShowerLength(shape_.coreShowerLength(multiclustersTmp.at(i), triggerGeometry));
+            multiclustersTmp.at(i).firstLayer(shape_.firstLayer(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).maxLayer(shape_.maxLayer(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).sigmaEtaEtaTot(shape_.sigmaEtaEtaTot(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).sigmaEtaEtaMax(shape_.sigmaEtaEtaMax(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).sigmaPhiPhiTot(shape_.sigmaPhiPhiTot(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).sigmaPhiPhiMax(shape_.sigmaPhiPhiMax(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).sigmaZZ(shape_.sigmaZZ(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).sigmaRRTot(shape_.sigmaRRTot(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).sigmaRRMax(shape_.sigmaRRMax(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).sigmaRRMean(shape_.sigmaRRMean(multiclustersTmp.at(i)));
+            multiclustersTmp.at(i).eMax(shape_.eMax(multiclustersTmp.at(i)));
 
             multiclusters.push_back( 0, multiclustersTmp.at(i));  
         }
@@ -169,11 +168,11 @@ void HGCalMulticlusteringImpl::clusterizeDBSCAN( const std::vector<edm::Ptr<l1t:
   iclu = 0;
   std::sort(rankedList.begin(), rankedList.end(), [](auto &left, auto &right) {
       return left.second < right.second;
-    });
+      });
 
-  for(auto cluRanked: rankedList){
+  for(const auto& cluRanked: rankedList){
     std::vector<unsigned int> neighbors;      
-    
+
     if(!visited.at(iclu)){
       visited.at(iclu) = true;
       findNeighbor(rankedList, iclu, clustersPtrs, neighbors);
@@ -185,21 +184,20 @@ void HGCalMulticlusteringImpl::clusterizeDBSCAN( const std::vector<edm::Ptr<l1t:
         /* dynamic range loop: range-based loop syntax cannot be employed */
         for(unsigned int neighInd = 0; neighInd < neighborList.at(iclu).size(); neighInd++){
           neighNo = neighborList.at(iclu).at(neighInd);
-
-          if(!visited.at(neighNo)){
-            visited.at(neighNo) = true;
-            std::vector<unsigned int> secNeighbors;
-            findNeighbor(rankedList, neighNo,clustersPtrs, secNeighbors);
-            multiclustersTmp.at(imclu).addConstituent( clustersPtrs[rankedList.at(neighNo).first]);
-            merged.at(neighNo) = true;
-            
-            if(secNeighbors.size() >= minNDbscan_){
-              neighborList.at(iclu).insert(neighborList.at(iclu).end(), secNeighbors.begin(), secNeighbors.end());
-            }
-            
-          } else if(!merged.at(neighNo) ){
+          /* This condition also ensures merging of clusters visited by other clusters but not merged. */
+          if(!merged.at(neighNo) ){
             merged.at(neighNo) = true;          
             multiclustersTmp.at(imclu).addConstituent( clustersPtrs[rankedList.at(neighNo).first] );
+
+            if(!visited.at(neighNo)){
+              visited.at(neighNo) = true;
+              std::vector<unsigned int> secNeighbors;
+              findNeighbor(rankedList, neighNo,clustersPtrs, secNeighbors);
+
+              if(secNeighbors.size() >= minNDbscan_){
+                neighborList.at(iclu).insert(neighborList.at(iclu).end(), secNeighbors.begin(), secNeighbors.end());
+              }
+            }
           }
         }
         imclu++;
@@ -212,38 +210,36 @@ void HGCalMulticlusteringImpl::clusterizeDBSCAN( const std::vector<edm::Ptr<l1t:
   for( unsigned i(0); i<multiclustersTmp.size(); ++i ){
 
     // compute the eta, phi observables for multicluster starting from its barycenter x,y,z position + pT as scalar sum of pT of constituents
-
     double sumPt=0.;
 
     const std::vector<edm::Ptr<l1t::HGCalCluster>> &pertinentClu = multiclustersTmp.at(i).constituents();
     for( std::vector<edm::Ptr<l1t::HGCalCluster>>::const_iterator  it_clu=pertinentClu.begin(); it_clu<pertinentClu.end(); it_clu++) sumPt +=(*it_clu)->pt();
 
     math::PtEtaPhiMLorentzVector multiclusterP4(  sumPt,
-                                                  multiclustersTmp.at(i).centre().eta(),
-                                                  multiclustersTmp.at(i).centre().phi(),
-                                                  0. );
+        multiclustersTmp.at(i).centre().eta(),
+        multiclustersTmp.at(i).centre().phi(),
+        0. );
     multiclustersTmp.at(i).setP4( multiclusterP4 );
 
-    
+
     if( multiclustersTmp.at(i).pt() > ptC3dThreshold_ ){
-      
+
       //compute shower shape
-      multiclustersTmp.at(i).set_showerLength(shape_.showerLength(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_coreShowerLength(shape_.coreShowerLength(multiclustersTmp.at(i), triggerGeometry));
-      multiclustersTmp.at(i).set_firstLayer(shape_.firstLayer(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_maxLayer(shape_.maxLayer(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_sigmaEtaEtaTot(shape_.sigmaEtaEtaTot(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_sigmaEtaEtaMax(shape_.sigmaEtaEtaMax(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_sigmaPhiPhiTot(shape_.sigmaPhiPhiTot(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_sigmaPhiPhiMax(shape_.sigmaPhiPhiMax(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_sigmaZZ(shape_.sigmaZZ(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_sigmaRRTot(shape_.sigmaRRTot(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_sigmaRRMax(shape_.sigmaRRMax(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_sigmaRRMean(shape_.sigmaRRMean(multiclustersTmp.at(i)));
-      multiclustersTmp.at(i).set_eMax(shape_.eMax(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).showerLength(shape_.showerLength(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).coreShowerLength(shape_.coreShowerLength(multiclustersTmp.at(i), triggerGeometry));
+      multiclustersTmp.at(i).firstLayer(shape_.firstLayer(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).maxLayer(shape_.maxLayer(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).sigmaEtaEtaTot(shape_.sigmaEtaEtaTot(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).sigmaEtaEtaMax(shape_.sigmaEtaEtaMax(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).sigmaPhiPhiTot(shape_.sigmaPhiPhiTot(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).sigmaPhiPhiMax(shape_.sigmaPhiPhiMax(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).sigmaZZ(shape_.sigmaZZ(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).sigmaRRTot(shape_.sigmaRRTot(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).sigmaRRMax(shape_.sigmaRRMax(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).sigmaRRMean(shape_.sigmaRRMean(multiclustersTmp.at(i)));
+      multiclustersTmp.at(i).eMax(shape_.eMax(multiclustersTmp.at(i)));
 
       multiclusters.push_back( 0, multiclustersTmp.at(i));  
     }
   }
-  
 }

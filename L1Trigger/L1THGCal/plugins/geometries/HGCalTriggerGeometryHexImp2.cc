@@ -468,11 +468,11 @@ getTriggerCellPosition(const unsigned trigger_cell_det_id) const
     // Position: barycenter of the trigger cell.
     Basic3DVector<float> triggerCellVector(0.,0.,0.);
     const auto cell_ids = getCellsFromTriggerCell(trigger_cell_det_id);
-    if(cell_ids.size()==0) return GlobalPoint(0,0,0);
+    if(cell_ids.empty()) return GlobalPoint(0,0,0);
     for(const auto& cell : cell_ids)
     {
         HGCalDetId cellDetId(cell);
-        triggerCellVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry().getPosition(cellDetId) :  fhGeometry().getPosition(cellDetId)).basicVector();
+        triggerCellVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry()->getPosition(cellDetId) :  fhGeometry()->getPosition(cellDetId)).basicVector();
     }
     return GlobalPoint( triggerCellVector/cell_ids.size() );
 
@@ -485,11 +485,11 @@ getModulePosition(const unsigned module_det_id) const
     // Position: barycenter of the module.
     Basic3DVector<float> moduleVector(0.,0.,0.);
     const auto cell_ids = getCellsFromModule(module_det_id);
-    if(cell_ids.size()==0) return GlobalPoint(0,0,0);
+    if(cell_ids.empty()) return GlobalPoint(0,0,0);
     for(const auto& cell : cell_ids)
     {
         HGCalDetId cellDetId(cell);
-        moduleVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry().getPosition(cellDetId) :  fhGeometry().getPosition(cellDetId)).basicVector();
+        moduleVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry()->getPosition(cellDetId) :  fhGeometry()->getPosition(cellDetId)).basicVector();
     }
     return GlobalPoint( moduleVector/cell_ids.size() );
 }
@@ -612,7 +612,7 @@ fillNeighborMaps()
         std::vector<std::string> neighbors_tokens {
             std::sregex_token_iterator(line.begin(), line.end(), neighbors_regex), {}
         };
-        if(neighbors_tokens.size()==0)
+        if(neighbors_tokens.empty())
         {
             throw cms::Exception("BadGeometry")
                 << "Syntax error in the L1TCellNeighborsMapping:\n"
