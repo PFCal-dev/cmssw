@@ -47,17 +47,16 @@ class HGCClusterAlgo : public Algorithm<FECODEC>
         triggercell_threshold_silicon_( conf.getParameter<double>("triggercell_threshold_silicon") ),
         triggercell_threshold_scintillator_( conf.getParameter<double>("triggercell_threshold_scintillator") )
         {
-            std::string type(conf.getParameterSet("C2d_parameters").getParameter<std::string>("clusterType"));
-            if(type=="dRC2d"){
+            std::string typeCluster(conf.getParameterSet("C2d_parameters").getParameter<std::string>("clusterType"));
+            if(typeCluster=="dRC2d"){
                 clusteringAlgorithmType_ = dRC2d;
-            }else if(type=="NNC2d"){
+            }else if(typeCluster=="NNC2d"){
                 clusteringAlgorithmType_ = NNC2d;
-            }else if(type=="dRNNC2d"){
+            }else if(typeCluster=="dRNNC2d"){
                 clusteringAlgorithmType_ = dRNNC2d;
             }else {
-                edm::LogWarning("ParameterError") << "Unknown clustering type '" << type
-                    << "'. Using nearest neighbor NNC2d instead.\n";
-                clusteringAlgorithmType_ = NNC2d;
+                throw cms::Exception("HGCTriggerParameterError")
+                    << "Unknown clustering type '" << typeCluster;
             }
             std::string typeMulticluster(conf.getParameterSet("C3d_parameters").getParameter<std::string>("type_multicluster"));
             if(typeMulticluster=="dRC3d"){
@@ -65,9 +64,8 @@ class HGCClusterAlgo : public Algorithm<FECODEC>
             }else if(typeMulticluster=="DBSCANC3d"){
                 multiclusteringAlgoType_ = DBSCANC3d;
             }else {
-                edm::LogWarning("ParameterError") << "Unknown Multiclustering type '" << typeMulticluster
-                    << "'. Using Cone Algorithm instead.\n";
-                multiclusteringAlgoType_ = dRC3d;
+                throw cms::Exception("HGCTriggerParameterError")
+                    << "Unknown Multiclustering type '" << typeMulticluster;
             }
 
         }
@@ -124,6 +122,9 @@ void HGCClusterAlgo<FECODEC,DATA>::run(const l1t::HGCFETriggerDigiCollection & c
                                        edm::Event & evt ) 
 {
     es.get<CaloGeometryRecord>().get("", triggerGeometry_);
+    calibration_.eventSetup(es);
+    clustering_.eventSetup(es);
+    multiclustering_.eventSetup(es);
 
     for( const auto& digi : coll ){
         
@@ -192,15 +193,15 @@ void HGCClusterAlgo<FECODEC,DATA>::run(const l1t::HGCFETriggerDigiCollection & c
     
     /* call to multiclustering and compute shower shape*/
     switch(multiclusteringAlgoType_){
-    case dRC3d : 
-      multiclustering_.clusterizeDR( clustersPtrs, *multicluster_product_, *triggerGeometry_);
-      break;
-    case DBSCANC3d:
-      multiclustering_.clusterizeDBSCAN( clustersPtrs, *multicluster_product_, *triggerGeometry_);
-      break;
-    default:
-      // Should not happen, clustering type checked in constructor
-      break;
+        case dRC3d : 
+            multiclustering_.clusterizeDR( clustersPtrs, *multicluster_product_, *triggerGeometry_);
+            break;
+        case DBSCANC3d:
+            multiclustering_.clusterizeDBSCAN( clustersPtrs, *multicluster_product_, *triggerGeometry_);
+            break;
+        default:
+            // Should not happen, clustering type checked in constructor
+            break;
     }
 
     /* retrieve the orphan handle to the multiclusters collection and put the collection in the event */
