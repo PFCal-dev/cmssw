@@ -11,13 +11,15 @@
 /* ROOT */
 #include "Math/Vector3D.h"
 
+#include <unordered_map>
+
 namespace l1t 
 {
   template <class C> class HGCalClusterT : public L1Candidate 
   {
 
     public:
-      typedef typename std::vector<edm::Ptr<C>>::const_iterator const_iterator;
+      typedef typename std::unordered_map<uint32_t, edm::Ptr<C>>::const_iterator const_iterator;
 
     public:
       HGCalClusterT(){}
@@ -47,10 +49,11 @@ namespace l1t
       
       ~HGCalClusterT() override {};
       
-      const std::vector<edm::Ptr<C>>& constituents() const { return constituents_; }
+      const std::unordered_map<uint32_t, edm::Ptr<C>>& constituents() const { return constituents_; }
       const_iterator constituents_begin() const { return constituents_.begin(); }
       const_iterator constituents_end() const { return constituents_.end(); }
       unsigned size() const { return constituents_.size(); }
+
 
       void addConstituent( const edm::Ptr<C>& c, bool updateCentre=true, float fraction=1. )
       {
@@ -68,37 +71,11 @@ namespace l1t
             centre_ = c->position();
           }
         }
+        updateP4AndPosition(c, updateCentre, fraction);
 
-        /* update cluster positions (IF requested) */
-        if( updateCentre ){
-          Basic3DVector<float> constituentCentre( c->position() );
-          Basic3DVector<float> clusterCentre( centre_ );
 
-          clusterCentre = clusterCentre*mipPt_ + constituentCentre*cMipt;
-          if( (mipPt_ + cMipt ) > 0 )
-          {
-            clusterCentre /= ( mipPt_ +  cMipt );
-          }
-          centre_ = GlobalPoint( clusterCentre );
-
-          if( clusterCentre.z()!=0 )
-          {
-            centreProj_= GlobalPoint( clusterCentre / clusterCentre.z() );
-          }
-        }
-
-        /* update cluster energies */
-        mipPt_ += cMipt;
-
-        int updatedPt = hwPt() + (int)(c->hwPt()*fraction);
-        setHwPt( updatedPt );
-
-        math::PtEtaPhiMLorentzVector updatedP4 ( p4() );
-        updatedP4 += (c->p4()*fraction);
-        setP4( updatedP4 );
-
-        constituents_.push_back( c );
-        constituentsFraction_.push_back( fraction );
+        constituents_.emplace( c->detId(), c );
+        constituentsFraction_.emplace( c->detId(), fraction );
 
       }
 
@@ -106,55 +83,17 @@ namespace l1t
 
         /* remove the pointer to c from the std::vector */
         double fraction=0;
-        bool constituentRemoved=false;
-        for( unsigned i=0; i<constituents_.size(); i++ )
+        const auto& constituent_itr = constituents_.find(c->detId());
+        const auto& fraction_itr = constituentsFraction_.find(c->detId());
+        if(constituent_itr!=constituents_.end())
         {
-          if( constituents_[i] == c )
-          {
-            // remove constituent and get its fraction in the cluster
-            constituents_.erase( constituents_.begin()+i );
-            fraction = constituentsFraction_.at(i);
-            constituentsFraction_.erase( constituentsFraction_.begin()+i );
-            constituentRemoved=true;
-            break;
-          }
+          // remove constituent and get its fraction in the cluster
+          fraction = fraction_itr->second;
+          constituents_.erase(constituent_itr);
+          constituentsFraction_.erase(fraction_itr);
+
+          updateP4AndPosition(c, updateCentre, -fraction);
         }
-
-        /* if a constituent has been removed update cluster info */
-        if( constituentRemoved ) {
-
-          /* update cluster positions (IF requested) */
-          double cMipt = c->mipPt()*fraction;
-          if( updateCentre ){
-            Basic3DVector<float> constituentCentre( c->position() );
-            Basic3DVector<float> clusterCentre( centre_ );
-
-            clusterCentre = clusterCentre*mipPt_ - constituentCentre*cMipt;
-            if( (mipPt_ - cMipt ) > 0 )
-            {
-              clusterCentre /= ( mipPt_ - cMipt ) ;
-            }
-            centre_ = GlobalPoint( clusterCentre );
-
-            if( clusterCentre.z() != 0 )
-            {
-              centreProj_= GlobalPoint( clusterCentre / clusterCentre.z() );
-            }
-
-          }
-
-          /* update cluster energies */
-          mipPt_ -= cMipt;
-
-          int updatedPt = hwPt() - ( c->hwPt()*fraction );
-          setHwPt( updatedPt );
-
-          math::PtEtaPhiMLorentzVector updatedP4 ( p4() );
-          updatedP4 -= ( c->p4()*fraction );
-          setP4( updatedP4 );
-
-        }
-
       }
 
       bool valid() const { return valid_; }
@@ -181,18 +120,20 @@ namespace l1t
         double pt_had = 0.;
         double hOe = 0.;
 
-        for(const auto& constituent : constituents())
+        for(const auto& id_constituent : constituents())
         {
-          switch( constituent->subdetId() )
+          auto id_fraction = constituentsFraction_.find(id_constituent.first);
+          double fraction = (id_fraction!=constituentsFraction_.end() ? id_fraction->second : 1.);
+          switch( id_constituent.second->subdetId() )
           {
             case HGCEE:
-              pt_em += constituent->pt();
+              pt_em += id_constituent.second->pt() * fraction;
               break;
             case HGCHEF:
-              pt_had += constituent->pt();
+              pt_had += id_constituent.second->pt() * fraction;
               break;
             case HGCHEB:
-              pt_had += constituent->pt();
+              pt_had += id_constituent.second->pt() * fraction;
               break;
             default:
               break;
@@ -250,8 +191,8 @@ namespace l1t
       bool valid_;
       HGCalDetId detId_;
 
-      std::vector<edm::Ptr<C>> constituents_;  /* ???? possibly change this in something like     */
-      std::vector<double> constituentsFraction_;  /*    vector<pair<edm::Ptr<C>,float>>    ????  */
+      std::unordered_map<uint32_t, edm::Ptr<C>> constituents_;
+      std::unordered_map<uint32_t, double> constituentsFraction_;
 
       GlobalPoint centre_;
       GlobalPoint centreProj_; // centre projected onto the first HGCal layer
@@ -276,6 +217,39 @@ namespace l1t
       float sigmaZZ_;
 
       ClusterShapes shapes_;
+
+
+      void updateP4AndPosition(const edm::Ptr<C>& c, bool updateCentre=true, float fraction=1.)
+      {
+        double cMipt = c->mipPt()*fraction;
+        /* update cluster positions (IF requested) */
+        if( updateCentre ){
+          Basic3DVector<float> constituentCentre( c->position() );
+          Basic3DVector<float> clusterCentre( centre_ );
+
+          clusterCentre = clusterCentre*mipPt_ + constituentCentre*cMipt;
+          if( (mipPt_ + cMipt ) > 0 )
+          {
+            clusterCentre /= ( mipPt_ +  cMipt );
+          }
+          centre_ = GlobalPoint( clusterCentre );
+
+          if( clusterCentre.z()!=0 )
+          {
+            centreProj_= GlobalPoint( clusterCentre / clusterCentre.z() );
+          }
+        }
+
+        /* update cluster energies */
+        mipPt_ += cMipt;
+
+        int updatedPt = hwPt() + (int)(c->hwPt()*fraction);
+        setHwPt( updatedPt );
+
+        math::PtEtaPhiMLorentzVector updatedP4 ( p4() );
+        updatedP4 += (c->p4()*fraction);
+        setP4( updatedP4 );
+      }
 
   };
 
