@@ -42,7 +42,7 @@ class HGCalTriggerGeometryHexLayerBasedImp1 : public HGCalTriggerGeometryBase
         virtual unsigned triggerLayer(const unsigned) const override final;
 
         virtual unsigned short getTriggerTowerFromTriggerCell(const unsigned) const override final;
-        virtual std::vector<l1t::HGCalTowerCoord> getTriggerTowers() const override final {
+        virtual const std::vector<l1t::HGCalTowerCoord>& getTriggerTowers() const override final {
           return towerGeometryHelper_.getTowerCoordinates();
         }
 
