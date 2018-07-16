@@ -7,6 +7,8 @@
 namespace l1t {
   class HGCalTowerID {
   public:
+    HGCalTowerID(): HGCalTowerID(0) {}
+
     HGCalTowerID(unsigned short rawId): rawId_(rawId) {}
 
     HGCalTowerID(short zside, unsigned short coord1, unsigned short coord2) {
@@ -43,10 +45,7 @@ namespace l1t {
     const float phi;
 
   };
-
-
 }
-
 
 
 
