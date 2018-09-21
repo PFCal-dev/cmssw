@@ -34,7 +34,7 @@ class HGCalBackendLayer1Processor2DClustering : public HGCalBackendLayer1Process
     void run(const edm::Handle<l1t::HGCalTriggerCellBxCollection>& collHandle,
              l1t::HGCalClusterBxCollection& collCluster2D,
              const edm::EventSetup& es) override 
-    { //std::cout << " HGCalBackendLayer1Processor2DClustering::run" << " collHandle->size = " << collHandle->size() << std::endl;
+    {
       es.get<CaloGeometryRecord>().get("", triggerGeometry_);
       clustering_.eventSetup(es);
       clusteringDummy_.eventSetup(es);
@@ -46,7 +46,7 @@ class HGCalBackendLayer1Processor2DClustering : public HGCalBackendLayer1Process
         triggerCellsPtrs.push_back(ptr);
       }
 
-      sort(triggerCellsPtrs.begin(), triggerCellsPtrs.end(),
+      std::sort(triggerCellsPtrs.begin(), triggerCellsPtrs.end(),
            [](const edm::Ptr<l1t::HGCalTriggerCell>& a, 
               const  edm::Ptr<l1t::HGCalTriggerCell>& b) -> bool
             {
