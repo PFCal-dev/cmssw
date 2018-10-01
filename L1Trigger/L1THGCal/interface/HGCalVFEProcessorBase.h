@@ -24,9 +24,7 @@ class HGCalVFEProcessorBase {
   
   void setGeometry(const HGCalTriggerGeometryBase* const geom) { geometry_ = geom;}
 
-  virtual void run(const HGCEEDigiCollection&,
-                   const HGCHEDigiCollection&,
-                   const HGCBHDigiCollection&,
+  virtual void run(const HGCalDigiCollection&,
                    l1t::HGCalTriggerCellBxCollection& triggerCellColl,
                    const edm::EventSetup& es) = 0;
   
