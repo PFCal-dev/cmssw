@@ -27,7 +27,7 @@ HGCalVFEProcessorSums::run(const HGCalDigiCollection& digiColl,
 { 
   calibration_.eventSetup(es);
 
-  std::vector<HGCDataFrame<DetId,HGCSample>> dataframes;
+  std::vector<HGCalDataFrame> dataframes;
   std::vector<std::pair<DetId, uint32_t >> linearized_dataframes;
   std::map<HGCalDetId, uint32_t> payload;
   std::map<HGCalDetId, std::array<uint32_t, 2> > compressed_payload;
