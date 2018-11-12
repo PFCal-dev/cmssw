@@ -45,6 +45,8 @@ class HGCalTriggerNtupleHGCTriggerCells : public HGCalTriggerNtupleBase
     std::vector<int> tc_subdet_;
     std::vector<int> tc_side_;
     std::vector<int> tc_layer_;
+    std::vector<int> tc_panel_number_;
+    std::vector<int> tc_panel_sector_;
     std::vector<int> tc_wafer_;
     std::vector<int> tc_wafertype_ ;
     std::vector<int> tc_cell_;
@@ -63,6 +65,12 @@ class HGCalTriggerNtupleHGCTriggerCells : public HGCalTriggerNtupleBase
     std::vector<uint32_t> tc_cluster_id_;
     std::vector<uint32_t> tc_multicluster_id_;
     std::vector<float> tc_multicluster_pt_;
+
+    // for assigning trigger cells to panels
+    static const unsigned kPanel_offset_ = 0;
+    static const unsigned kPanel_mask_ = 0x1F;
+    static const unsigned kSector_offset_ = 5;
+    static const unsigned kSector_mask_ = 0x7;
 
 };
 
@@ -103,6 +111,8 @@ initialize(TTree& tree, const edm::ParameterSet& conf, edm::ConsumesCollector&& 
   tree.Branch("tc_subdet", &tc_subdet_);
   tree.Branch("tc_zside", &tc_side_);
   tree.Branch("tc_layer", &tc_layer_);
+  tree.Branch("tc_panel_number", &tc_panel_number_);
+  tree.Branch("tc_panel_sector", &tc_panel_sector_);
   tree.Branch("tc_wafer", &tc_wafer_);
   tree.Branch("tc_wafertype", &tc_wafertype_);
   tree.Branch("tc_cell", &tc_cell_);
@@ -193,6 +203,12 @@ fill(const edm::Event& e, const edm::EventSetup& es)
       tc_uncompressedCharge_.emplace_back(tc_itr->uncompressedCharge());
       tc_compressedCharge_.emplace_back(tc_itr->compressedCharge());
       tc_mipPt_.emplace_back(tc_itr->mipPt());
+      // get panel id                                                        
+      HGCalDetId panelId(geometry_->getModuleFromTriggerCell(id));           
+      int panel_sector = (panelId.wafer()>>kSector_offset_) & kSector_mask_ ;
+      int panel_number = (panelId.wafer()>>kPanel_offset_) & kPanel_mask_ ;
+      tc_panel_number_.emplace_back(panel_number);                           
+      tc_panel_sector_.emplace_back(panel_sector);                           
       // physical values 
       tc_pt_.emplace_back(tc_itr->pt());
       tc_energy_.emplace_back(tc_itr->energy());
@@ -319,6 +335,8 @@ clear()
   tc_subdet_.clear();
   tc_side_.clear();
   tc_layer_.clear();
+  tc_panel_number_.clear();
+  tc_panel_sector_.clear();
   tc_wafer_.clear();
   tc_wafertype_.clear();
   tc_cell_.clear();
