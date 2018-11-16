@@ -53,6 +53,9 @@ namespace l1t
 
             void     setCompressedCharge( uint32_t value ) { compressedCharge_ = value; }
             uint32_t compressedCharge() const              { return compressedCharge_;  }
+
+            bool operator==(const HGCalTriggerCell& rhs) const;
+            inline bool operator!=(const HGCalTriggerCell& rhs) const { return !(operator==(rhs)); };
             
         private:
             

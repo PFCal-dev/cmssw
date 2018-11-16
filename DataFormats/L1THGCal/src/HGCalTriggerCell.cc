@@ -18,3 +18,13 @@ HGCalTriggerCell::
 ~HGCalTriggerCell() 
 {
 }
+
+bool HGCalTriggerCell::operator==(const HGCalTriggerCell& rhs) const
+{
+  return L1Candidate::operator==(static_cast<const L1Candidate &>(rhs))
+      && detid_.rawId() == rhs.detId()
+      && position_ == rhs.position()
+      && mipPt_ == rhs.mipPt()
+      && uncompressedCharge_ == rhs.uncompressedCharge()
+      && compressedCharge_ == rhs.compressedCharge();
+}
