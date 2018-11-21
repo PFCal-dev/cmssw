@@ -315,8 +315,18 @@ std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeModifiedMaxSeeds(
 
 
 
+    //TESTING
 
+    for(int z_side : {-1,1}){
+        for(int bin_R = 0; bin_R<int(nBinsRHisto_); bin_R++){
+            for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
 
+                float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
+		std::cout << MIPT_seed << ", " << z_side <<", "<<bin_R<<", "<<bin_phi << ", " << primarySeedPositions[bin_R][bin_phi][z_side] << ", " << secondarySeedPositions[bin_R][bin_phi][z_side] << std::endl;
+
+	    }
+	}
+    }
 
     return seedPositions;
 
