@@ -92,7 +92,7 @@ def custom_3dclustering_histoMax(process,
     return process
 
 def custom_3dclustering_histoModifiedMax(process,
-        distance = 0.01,
+        distance = 0.03,
         nBins_R = 36,
         nBins_Phi = 216,
         binSumsHisto = cms.vuint32(13,               #0
