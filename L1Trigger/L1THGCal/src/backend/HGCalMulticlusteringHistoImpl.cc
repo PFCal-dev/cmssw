@@ -322,24 +322,24 @@ std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeModifiedMaxSeeds(
 
     //TESTING
 
-    TFile * file = new TFile ("ModMax.root", "RECREATE");
-    TH2D * hist2D = new TH2D( "ModMax","",50,-0.5,49.5,250,-0.5,249.5);
+    // TFile * file = new TFile ("ModMax.root", "RECREATE");
+    // TH2D * hist2D = new TH2D( "ModMax","",50,-0.5,49.5,250,-0.5,249.5);
 
-    //    for(int z_side : {-1,1}){
-    for(int z_side : {1}){
-        for(int bin_R = 0; bin_R<int(nBinsRHisto_); bin_R++){
-            for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
+    // //    for(int z_side : {-1,1}){
+    // for(int z_side : {1}){
+    //     for(int bin_R = 0; bin_R<int(nBinsRHisto_); bin_R++){
+    //         for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
 
-                float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
-		//		std::cout << MIPT_seed << ", " << z_side <<", "<<bin_R<<", "<<bin_phi << ", " << primarySeedPositions[bin_R][bin_phi][z_side] << ", " << secondarySeedPositions[bin_R][bin_phi][z_side] << std::endl;
-		if ( primarySeedPositions[bin_R][bin_phi][z_side] ) hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
-		if ( secondarySeedPositions[bin_R][bin_phi][z_side] ) hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
-	    }
-	}
-    }
+    //             float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
+    // 		//		std::cout << MIPT_seed << ", " << z_side <<", "<<bin_R<<", "<<bin_phi << ", " << primarySeedPositions[bin_R][bin_phi][z_side] << ", " << secondarySeedPositions[bin_R][bin_phi][z_side] << std::endl;
+    // 		if ( primarySeedPositions[bin_R][bin_phi][z_side] ) hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
+    // 		if ( secondarySeedPositions[bin_R][bin_phi][z_side] ) hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
+    // 	    }
+    // 	}
+    // }
 
-    hist2D->Write();
-    file->Close();
+    // hist2D->Write();
+    // file->Close();
 
     return seedPositions;
 
@@ -353,8 +353,8 @@ std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeModifiedMaxSeeds(
 
 std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeMaxSeeds( const Histogram & histoClusters ){
 
-    TFile * file = new TFile ("DefaultMax.root", "RECREATE");
-    TH2D * hist2D = new TH2D( "DefaultMax","",50,-0.5,49.5,250,-0.5,249.5);
+    // TFile * file = new TFile ("DefaultMax.root", "RECREATE");
+    // TH2D * hist2D = new TH2D( "DefaultMax","",50,-0.5,49.5,250,-0.5,249.5);
 
 
 
@@ -406,9 +406,9 @@ std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeMaxSeeds( const H
                     seedPositions.emplace_back(x_seed,y_seed,z_side);
 		    
 		    
-		    if ( z_side == 1){
-		      hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
-		    }
+		    // if ( z_side == 1){
+		    //   hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
+		    // }
 
 		}
             }
@@ -416,8 +416,8 @@ std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeMaxSeeds( const H
         }
 
     }
-    hist2D->Write();
-    file->Close();
+    //    hist2D->Write();
+    //    file->Close();
 
     return seedPositions;
 
