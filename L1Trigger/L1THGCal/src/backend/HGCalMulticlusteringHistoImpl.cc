@@ -351,14 +351,13 @@ std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeModifiedMaxSeeds(
 
 
 
-std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeMaxSeeds( const Histogram & histoClusters ){
+std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::computeMaxSeeds( const Histogram & histoClusters ){
 
     // TFile * file = new TFile ("DefaultMax.root", "RECREATE");
     // TH2D * hist2D = new TH2D( "DefaultMax","",50,-0.5,49.5,250,-0.5,249.5);
 
 
-
-    std::vector<GlobalPoint> seedPositions;
+  std::vector<std::pair<GlobalPoint, double > > seedPositions;
 
     for(int z_side : {-1,1}){
 
@@ -403,9 +402,7 @@ std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeMaxSeeds( const H
                     float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
                     float x_seed = ROverZ_seed*cos(phi_seed);
                     float y_seed = ROverZ_seed*sin(phi_seed);
-                    seedPositions.emplace_back(x_seed,y_seed,z_side);
-		    
-		    
+                    seedPositions.emplace_back( std::make_pair( GlobalPoint(x_seed,y_seed,z_side), MIPT_seed) );
 		    // if ( z_side == 1){
 		    //   hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
 		    // }
@@ -513,42 +510,72 @@ std::vector<GlobalPoint> HGCalMulticlusteringHistoImpl::computeThresholdSeeds( c
 
 
 std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
-											   const std::vector<GlobalPoint> & seeds){
+											   const std::vector<std::pair<GlobalPoint, double> > & seeds){
 
+  bool splitEnergyApproach= false;
+  bool distanceApproach= true;
 
     std::map<int,l1t::HGCalMulticluster> mapSeedMulticluster;
     std::vector<l1t::HGCalMulticluster> multiclustersTmp;
-
     for(auto & clu : clustersPtrs){
-
 
         int z_side = triggerTools_.zside(clu->detId());
 
-        double minDist = dr_byLayer_.empty() ? dr_ : dr_byLayer_.at(triggerTools_.layerWithOffset(clu->detId())); // use at() to get the assert, for the moment
+        double minDist = dr_;
+	std::vector<int> targetSeeds;
+	std::vector<double> targetSeedsEnergy;
         int targetSeed = -1;
-
         for( unsigned int iseed=0; iseed<seeds.size(); iseed++ ){
 
-            if( z_side*seeds[iseed].z()<0) continue;
+            if( z_side*seeds[iseed].first.z()<0) continue;
 
-            double d = this->dR(*clu, seeds[iseed]);
+            double d = this->dR(*clu, seeds[iseed].first);
 
-            if(d<minDist){
-                minDist = d;
-                targetSeed = iseed;
-            }
+	    if ( d < dr_ ){
+	      if ( splitEnergyApproach ){
+		targetSeeds.push_back( iseed );
+		targetSeedsEnergy.push_back( seeds[iseed].second );
+	      }
+	      if ( distanceApproach ){
+		if(d<minDist){
+		  minDist = d;
+		  if ( targetSeeds.size()==0 ) {
+		    targetSeeds.push_back( iseed );
+		    targetSeedsEnergy.push_back( seeds[iseed].second );
+		  }
+		  else {
+		    targetSeeds.at(0) = iseed ;
+		    targetSeedsEnergy.at(0) = ( seeds[iseed].second );
+		  }
+		}
+	      }
+
+	    }
+
 
         }
 
-        if(targetSeed<0) continue;
-
-        if(mapSeedMulticluster[targetSeed].size()==0) mapSeedMulticluster[targetSeed] = l1t::HGCalMulticluster(clu);
-        else mapSeedMulticluster[targetSeed].addConstituent(clu);
-
+	//        if(targetSeed<0) continue;
+        if(targetSeeds.size()==0) continue;
+	//Loop over target seeds and divide up the clusters energy
+	
+	double totalTargetSeedEnergy = 0;
+	for (auto energy: targetSeedsEnergy){
+	  totalTargetSeedEnergy+=energy;
+	}
+	for (unsigned int seed = 0; seed < targetSeeds.size(); seed++){
+	  
+	  double seedWeight = 1;
+	  if ( distanceApproach) seedWeight = targetSeedsEnergy[seed]/totalTargetSeedEnergy;
+	  if( mapSeedMulticluster[ targetSeeds[seed]].size()==0) mapSeedMulticluster[targetSeeds[seed]] ;
+	  mapSeedMulticluster[targetSeeds[seed]].addConstituent(clu, true, seedWeight);	  
+	  
+	}
+	
     }
-
+    
     for(auto mclu : mapSeedMulticluster) multiclustersTmp.emplace_back(mclu.second);
-
+    
     return multiclustersTmp;
 
 }
@@ -572,12 +599,13 @@ void HGCalMulticlusteringHistoImpl::clusterizeHisto( const std::vector<edm::Ptr<
 
     /* seeds determined with local maximum criteria */
     std::vector<GlobalPoint> seedPositions;
-    if (multiclusteringAlgoType_ == HistoMaxC3d) seedPositions = computeMaxSeeds(smoothRPhiHistoCluster);
+    std::vector<std::pair<GlobalPoint, double> > seedPositionsEnergy;
+    if (multiclusteringAlgoType_ == HistoMaxC3d) seedPositionsEnergy = computeMaxSeeds(smoothRPhiHistoCluster);
     else if(multiclusteringAlgoType_ == HistoThresholdC3d) seedPositions = computeThresholdSeeds(smoothRPhiHistoCluster);
     else if(multiclusteringAlgoType_ == HistoInterpolatedMaxC3d) seedPositions = computeInterpolatedMaxSeeds(smoothRPhiHistoCluster);
     /* clusterize clusters around seeds */
-    std::vector<l1t::HGCalMulticluster> multiclustersTmp = clusterSeedMulticluster(clustersPtrs,seedPositions);
-
+    std::vector<l1t::HGCalMulticluster> multiclustersTmp = clusterSeedMulticluster(clustersPtrs,seedPositionsEnergy);
+    
     /* making the collection of multiclusters */
     finalizeClusters(multiclustersTmp, multiclusters, triggerGeometry);
 

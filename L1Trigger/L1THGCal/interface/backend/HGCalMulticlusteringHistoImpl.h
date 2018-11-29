@@ -54,7 +54,7 @@ private:
 
     Histogram fillSmoothRPhiHistoClusters( const Histogram & histoClusters );
 
-    std::vector<GlobalPoint> computeMaxSeeds( const Histogram & histoClusters );
+    std::vector<std::pair<GlobalPoint, double> > computeMaxSeeds( const Histogram & histoClusters );
 
     std::vector<GlobalPoint> computeInterpolatedMaxSeeds( const Histogram & histoClusters );
 
@@ -63,7 +63,7 @@ private:
     std::vector<GlobalPoint> computeThresholdSeeds( const Histogram & histoClusters );
 
     std::vector<l1t::HGCalMulticluster> clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
-								const std::vector<GlobalPoint> & seeds);
+								const std::vector<std::pair<GlobalPoint, double> > & seeds);
 
     void finalizeClusters(std::vector<l1t::HGCalMulticluster>&,
             l1t::HGCalMulticlusterBxCollection&,

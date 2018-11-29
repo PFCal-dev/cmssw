@@ -76,8 +76,8 @@ def custom_3dclustering_dbscan(process,
 
 
 def custom_3dclustering_histoMax(process,
-        distance = 0.03,
-        threshold = 20.,
+        distance = 0.01,                             
+        threshold = 0.,
         nBins_R = 36,
         nBins_Phi = 216,
         binSumsHisto = binSums,                        
@@ -87,6 +87,7 @@ def custom_3dclustering_histoMax(process,
     parameters_c3d.dR_multicluster = cms.double(distance)
     parameters_c3d.nBins_R_histo_multicluster = cms.uint32(nBins_R)
     parameters_c3d.nBins_Phi_histo_multicluster = cms.uint32(nBins_Phi)
+    parameters_c3d.threshold_histo_multicluster = cms.double(threshold)
     parameters_c3d.binSumsHisto = binSumsHisto
     parameters_c3d.threshold_histo_multicluster = seed_threshold
     parameters_c3d.type_multicluster = cms.string('HistoMaxC3d')
