@@ -56,11 +56,11 @@ private:
 
     std::vector<std::pair<GlobalPoint, double> > computeMaxSeeds( const Histogram & histoClusters );
 
-    std::vector<GlobalPoint> computeInterpolatedMaxSeeds( const Histogram & histoClusters );
-
-    std::vector<GlobalPoint> computeModifiedMaxSeeds( const Histogram & histoClusters );
-
-    std::vector<GlobalPoint> computeThresholdSeeds( const Histogram & histoClusters );
+    std::vector<std::pair<GlobalPoint, double> > computeModifiedMaxSeeds( const Histogram & histoClusters );
+    
+    std::vector<std::pair<GlobalPoint, double> > computeInterpolatedMaxSeeds( const Histogram & histoClusters );
+    
+    std::vector<std::pair<GlobalPoint, double> > computeThresholdSeeds( const Histogram & histoClusters );
 
     std::vector<l1t::HGCalMulticluster> clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
 								const std::vector<std::pair<GlobalPoint, double> > & seeds);

@@ -132,7 +132,7 @@ def custom_3dclustering_histoMax_variableDr(process,
 
 
 def custom_3dclustering_histoInterpolatedMax(process,
-        threshold = 20.,
+        threshold = 10.,
         distance = 0.03,
         nBins_R = 36,
         nBins_Phi = 216,
@@ -143,14 +143,14 @@ def custom_3dclustering_histoInterpolatedMax(process,
     parameters_c3d.type_multicluster = cms.string('HistoInterpolatedMaxC3d')
     return process
 
-def custom_3dclustering_histoInterpolatedMax1stOrder(process):
+def custom_3dclustering_histoInterpolatedMax1stOrder(process, threshold = 0.):
 
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
     parameters_c3d.neighbour_weights=cms.vdouble(  0    , 0.25, 0   ,
                                                    0.25 , 0   , 0.25,
                                                    0    , 0.25, 0
                                                 )
-    process = custom_3dclustering_histoInterpolatedMax( process )    
+    process = custom_3dclustering_histoInterpolatedMax( process, threshold)    
     return process
 
 
