@@ -43,6 +43,7 @@
   <class name="edm::Wrapper<l1t::HGCalClusterBxCollection>"/>
 
   <class name="l1t::HGCalClusterT<l1t::HGCalCluster>" />
+
   <class name="l1t::HGCalMulticluster" ClassVersion="16">
    <version ClassVersion="16" checksum="1276395758"/>
    <version ClassVersion="15" checksum="777879934"/>

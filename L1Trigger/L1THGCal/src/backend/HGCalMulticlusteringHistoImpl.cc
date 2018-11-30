@@ -515,10 +515,10 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
 std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
 											   const std::vector<std::pair<GlobalPoint, double> > & seeds){
 
-  bool splitEnergyApproach= true;
-  bool distanceApproach= false;
-  // bool splitEnergyApproach= false;
-  // bool distanceApproach= true;
+  // bool splitEnergyApproach= true;
+  // bool distanceApproach= false;
+  bool splitEnergyApproach= false;
+  bool distanceApproach= true;
 
     std::map<int,l1t::HGCalMulticluster> mapSeedMulticluster;
     std::vector<l1t::HGCalMulticluster> multiclustersTmp;
@@ -529,7 +529,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
         double minDist = dr_;
 	std::vector<int> targetSeeds;
 	std::vector<double> targetSeedsEnergy;
-        int targetSeed = -1;
+	//        int targetSeed = -1;
         for( unsigned int iseed=0; iseed<seeds.size(); iseed++ ){
 
             if( z_side*seeds[iseed].first.z()<0) continue;
@@ -544,6 +544,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 	      if ( distanceApproach ){
 		if(d<minDist){
 		  minDist = d;
+		  //		  targetSeed = iseed;
 		  if ( targetSeeds.size()==0 ) {
 		    targetSeeds.push_back( iseed );
 		    targetSeedsEnergy.push_back( seeds[iseed].second );
@@ -560,21 +561,25 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
         }
 
-	//        if(targetSeed<0) continue;
-        if(targetSeeds.size()==0) continue;
+	//	if(targetSeed<0) continue;
+	if(targetSeeds.size()==0) continue;
 	//Loop over target seeds and divide up the clusters energy
 	
 	double totalTargetSeedEnergy = 0;
 	for (auto energy: targetSeedsEnergy){
 	  totalTargetSeedEnergy+=energy;
 	}
+
+	// if(mapSeedMulticluster[targetSeed].size()==0) mapSeedMulticluster[targetSeed] = l1t::HGCalMulticluster(clu);
+	// else mapSeedMulticluster[targetSeed].addConstituent(clu);
+
 	for (unsigned int seed = 0; seed < targetSeeds.size(); seed++){
 	  
 	  double seedWeight = 1;
        	  if ( splitEnergyApproach ) seedWeight = targetSeedsEnergy[seed]/totalTargetSeedEnergy;
 	  //         std::cout << "seed weight = " << seedWeight << std::endl;//quite small 0.03 for energy approach
 
-	  if( mapSeedMulticluster[ targetSeeds[seed]].size()==0) mapSeedMulticluster[targetSeeds[seed]] ;
+	  if( mapSeedMulticluster[ targetSeeds[seed]].size()==0) mapSeedMulticluster[targetSeeds[seed]] = l1t::HGCalMulticluster(clu, seedWeight) ;
 	  mapSeedMulticluster[targetSeeds[seed]].addConstituent(clu, true, seedWeight);	  
 	  
 	}
@@ -633,19 +638,26 @@ finalizeClusters(std::vector<l1t::HGCalMulticluster>& multiclusters_in,
     for(auto& multicluster : multiclusters_in) {
         // compute the eta, phi from its barycenter
         // + pT as scalar sum of pT of constituents
-        double sumPt=0.;
-        const std::unordered_map<uint32_t, edm::Ptr<l1t::HGCalCluster>>& clusters = multicluster.constituents();
-        for(const auto& id_cluster : clusters) {
-	  sumPt += id_cluster.second->pt();
-	  //	  std::cout << "id_cluster.second->pt() = " << id_cluster.second->pt() << std::endl;
-	}
+        double sumPt=multicluster.sumPt();
+	//        const std::unordered_map<uint32_t, edm::Ptr<l1t::HGCalCluster>>& clusters = multicluster.constituents();
+        // for(const auto& id_cluster : clusters) {
+	//   sumPt += id_cluster.second->pt();
+	//   //	  std::cout << "id_cluster.second->pt() = " << id_cluster.second->pt() << std::endl;
+	// }
+
+	// if (std::isnan( multicluster.centre().eta() )) std::cout << "NAN ETA1!" << std::endl;
+	// if (std::isnan( multicluster.centre().phi() )) std::cout << "NAN PHI1!" << std::endl;
 	//	std::cout << "sum pt = " << sumPt << std::endl;
-	//	math::PtEtaPhiMLorentzVector multiclusterP4(  sumPt,
-	math::PtEtaPhiMLorentzVector multiclusterP4(  multicluster.pt(),
+	math::PtEtaPhiMLorentzVector multiclusterP4(  sumPt,
+	//	math::PtEtaPhiMLorentzVector multiclusterP4(  multicluster.pt(),
                 multicluster.centre().eta(),
                 multicluster.centre().phi(),
                 0. );
         multicluster.setP4( multiclusterP4 );
+
+	// if ( std::isnan(multicluster.pt() )) std::cout << "NAN PT2!" << std::endl;
+	// if ( std::isnan(multicluster.eta() )) std::cout << "NAN ETA2!" << std::endl;
+	// if ( std::isnan(multicluster.phi() )) std::cout << "NAN PHI2!" << std::endl;
 
         if( multicluster.pt() > ptC3dThreshold_ ){
             //compute shower shapes
