@@ -79,6 +79,7 @@ private:
     std::vector<unsigned> binsSumsHisto_;
     double histoThreshold_ = 20.;
     std::vector<double> neighbour_weights_;
+    std::string cluster_association_;
 
     HGCalShowerShape shape_;
     HGCalTriggerTools triggerTools_;

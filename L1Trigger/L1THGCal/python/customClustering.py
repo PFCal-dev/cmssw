@@ -131,6 +131,19 @@ def custom_3dclustering_histoMax_variableDr(process,
     return process
 
 
+def custom_3dclustering_distanceAssociation(process):
+    
+    parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
+    parameters_c3d.cluster_association = cms.string('distance')
+    return process
+
+def custom_3dclustering_energyAssociation(process):
+    
+    parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
+    parameters_c3d.cluster_association = cms.string('energy')
+    return process
+
+
 def custom_3dclustering_histoInterpolatedMax(process,
         threshold = 10.,
         distance = 0.03,

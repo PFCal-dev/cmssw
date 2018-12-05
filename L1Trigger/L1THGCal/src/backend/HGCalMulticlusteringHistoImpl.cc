@@ -14,7 +14,8 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
     nBinsPhiHisto_(conf.getParameter<unsigned>("nBins_Phi_histo_multicluster")),
     binsSumsHisto_(conf.getParameter< std::vector<unsigned> >("binSumsHisto")),
     histoThreshold_(conf.getParameter<double>("threshold_histo_multicluster")),
-    neighbour_weights_(conf.getParameter< std::vector<double> >("neighbour_weights"))
+    neighbour_weights_(conf.getParameter< std::vector<double> >("neighbour_weights")),
+    cluster_association_(conf.getParameter<string>("cluster_association"))
 {    
   
     if(multiclusterAlgoType_=="HistoMaxC3d"){
@@ -434,7 +435,8 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
             for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
               
                 float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
-                bool isMax = MIPT_seed > histoThreshold_;		
+		//                bool isMax = MIPT_seed > histoThreshold_;		
+		//                bool isMax = MIPT_seed ;		
                 
                 float MIPT_S = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,bin_phi}}) : 0;
                 float MIPT_N = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,bin_phi}}) : 0;
@@ -456,7 +458,7 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
                   + neighbour_weights_.at(3) * MIPT_W + neighbour_weights_.at(5) * MIPT_E + neighbour_weights_.at(6) * MIPT_SW
                   + neighbour_weights_.at(7) * MIPT_S + neighbour_weights_.at(8) * MIPT_SE;
                 
-                isMax &= MIPT_seed>=MIPT_pred;
+                bool isMax = MIPT_seed>=(MIPT_pred+histoThreshold_);//check
                 
                 if(isMax){
                   float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
@@ -515,10 +517,10 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
 std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
 											   const std::vector<std::pair<GlobalPoint, double> > & seeds){
 
-  // bool splitEnergyApproach= true;
-  // bool distanceApproach= false;
-  bool splitEnergyApproach= false;
-  bool distanceApproach= true;
+  // // bool splitEnergyApproach= true;
+  // // bool distanceApproach= false;
+  // bool splitEnergyApproach= false;
+  // bool distanceApproach= true;
 
     std::map<int,l1t::HGCalMulticluster> mapSeedMulticluster;
     std::vector<l1t::HGCalMulticluster> multiclustersTmp;
@@ -537,11 +539,11 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
             double d = this->dR(*clu, seeds[iseed].first);
 
 	    if ( d < dr_ ){
-	      if ( splitEnergyApproach ){
+	      if ( cluster_association_ == "energy" ){
 		targetSeeds.push_back( iseed );
 		targetSeedsEnergy.push_back( seeds[iseed].second );
 	      }
-	      if ( distanceApproach ){
+	      if ( cluster_association_ == "distance" ){
 		if(d<minDist){
 		  minDist = d;
 		  //		  targetSeed = iseed;
@@ -576,9 +578,9 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 	for (unsigned int seed = 0; seed < targetSeeds.size(); seed++){
 	  
 	  double seedWeight = 1;
-       	  if ( splitEnergyApproach ) seedWeight = targetSeedsEnergy[seed]/totalTargetSeedEnergy;
-	  //         std::cout << "seed weight = " << seedWeight << std::endl;//quite small 0.03 for energy approach
-
+       	  if ( cluster_association_ == "energy" ) seedWeight = targetSeedsEnergy[seed]/totalTargetSeedEnergy;
+	  //	           std::cout << "seed weight = " << seedWeight << std::endl;//quite small 0.03 for energy approach
+	
 	  if( mapSeedMulticluster[ targetSeeds[seed]].size()==0) mapSeedMulticluster[targetSeeds[seed]] = l1t::HGCalMulticluster(clu, seedWeight) ;
 	  mapSeedMulticluster[targetSeeds[seed]].addConstituent(clu, true, seedWeight);	  
 	  
