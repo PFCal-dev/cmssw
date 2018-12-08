@@ -27,6 +27,13 @@ namespace l1t
                     int qual=0, 
                     uint32_t detid=0);
 
+            HGCalTriggerCell( const PolarLorentzVector& p4,
+                    int pt=0,
+                    int eta=0,
+                    int phi=0,
+                    int qual=0,
+                    uint32_t detid=0);
+
             ~HGCalTriggerCell() override;
 
             void setDetId(uint32_t detid) {detid_ = HGCalDetId(detid);}
