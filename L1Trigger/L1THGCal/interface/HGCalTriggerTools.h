@@ -18,8 +18,11 @@
 #include <vector>
 #include "DataFormats/L1Trigger/interface/BXVector.h"
 
+#include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/ForwardDetId/interface/ForwardSubdetector.h"
+#include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
+#include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 
 class HGCalTriggerGeometryBase;
 class DetId;
@@ -39,8 +42,10 @@ class HGCalTriggerTools {
     void eventSetup(const edm::EventSetup&);
     GlobalPoint getTCPosition(const DetId& id) const;
     unsigned layers(ForwardSubdetector type) const;
+    unsigned layers(DetId::Detector type) const ;
     unsigned layer(const DetId&) const;
     unsigned layerWithOffset(const DetId&) const;
+    int zside(const DetId&) const;
     int thicknessIndex(const DetId&) const;
 
     unsigned lastLayerEE() const {return eeLayers_;}
@@ -69,6 +74,9 @@ class HGCalTriggerTools {
       outputVector.insert(outputVector.end(), inputBXVector.begin(0), inputBXVector.end(0));
       return outputVector;
     }
+
+    DetId simToReco(const DetId&, const HGCalTopology&) const ;
+    DetId simToReco(const DetId&, const HcalTopology&) const ;
 
   private:
     const HGCalTriggerGeometryBase* geom_;
