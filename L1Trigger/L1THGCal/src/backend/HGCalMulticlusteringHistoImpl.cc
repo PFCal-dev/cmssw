@@ -518,34 +518,70 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
 std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
 											   const std::vector<std::pair<GlobalPoint, double> > & seeds){
 
+
+   TFile * file = new TFile ("distance.root", "UPDATE");
+  TH1D * nSeeds = 0;
+  TH2D * hist2D = 0;
+  TH2D * hist2D_ew = 0;
+  nSeeds = (TH1D *)file->Get( "nSeeds" );
+  hist2D = (TH2D *)file->Get( "distance" );
+  hist2D_ew = (TH2D *)file->Get( "distance_ew" );  
+  if ( nSeeds == 0){
+    nSeeds = new TH1D( "nSeeds","",200,0,5000);
+  }
+  if ( hist2D == 0){
+   hist2D = new TH2D( "distance","",160,1.5,3.1,100,0,0.1);
+  }
+
+  if (hist2D_ew == 0){
+    hist2D_ew = new TH2D( "distance_ew","",160,1.5,3.1,100,0,0.1);
+  }
+
     std::map<int,l1t::HGCalMulticluster> mapSeedMulticluster;
     std::vector<l1t::HGCalMulticluster> multiclustersTmp;
+    //total number of seeds = 216*36 = 7776
     for(auto & clu : clustersPtrs){
-
         int z_side = triggerTools_.zside(clu->detId());
 
 	double minDist = drA_ + drB_*(2.3 - std::abs(clu->eta()) ) ;
+	//	double minDistF = drA_ + drB_*(2.3 - std::abs(clu->eta()) ) ;
+	double minDistToSeed = 999;
+	//Fabs and Abs are the same
+
+	//	std::cout << drA_ << " - " << drB_ << " - " << minDist  << std::endl;
+
+
+	
 
 	std::vector<int> targetSeeds;
 	std::vector<double> targetSeedsEnergy;
 	//        int targetSeed = -1;
+	//temp
+	//	minDist = 0.1;
 
         for( unsigned int iseed=0; iseed<seeds.size(); iseed++ ){
 
-            if( z_side*seeds[iseed].first.z()<0) continue;
-
+	    if( z_side*seeds[iseed].first.z()<0) continue;
             double d = this->dR(*clu, seeds[iseed].first);
+	    if ( d < minDistToSeed ){
+	      minDistToSeed = d;
+	    }
 
-	    if ( d < dr_ ){
+	    //	    std::cout << "{" << d << ", " << std::abs(clu->eta())  <<"},";
+
+	    //	    if ( d < dr_ ){//To Update  - was wrong before
+	    if ( d < minDist ){
 	      if ( cluster_association_ == "energy" ){
 		targetSeeds.push_back( iseed );
 		targetSeedsEnergy.push_back( seeds[iseed].second );
 	      }
 	      if ( cluster_association_ == "distance" ){
-		if(d<minDist){
+		//if(d<minDist){
+
 		  minDist = d;
 		  //		  targetSeed = iseed;
 		  if ( targetSeeds.size()==0 ) {
+
 		    targetSeeds.push_back( iseed );
 		    targetSeedsEnergy.push_back( seeds[iseed].second );
 		  }
@@ -554,17 +590,26 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 		    targetSeedsEnergy.at(0) = ( seeds[iseed].second );
 		  }
 		}
-	      }
+	      //	      }
 
 	    }
 
 
         }
 
+
+
+       	hist2D->Fill( clu->eta(),minDistToSeed );
+       	hist2D_ew->Fill( clu->eta(),minDistToSeed, clu->pt() );
+
+
+
+
+
+
 	//	if(targetSeed<0) continue;
 	if(targetSeeds.size()==0) continue;
 	//Loop over target seeds and divide up the clusters energy
-	
 	double totalTargetSeedEnergy = 0;
 	for (auto energy: targetSeedsEnergy){
 	  totalTargetSeedEnergy+=energy;
@@ -572,12 +617,11 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
 	// if(mapSeedMulticluster[targetSeed].size()==0) mapSeedMulticluster[targetSeed] = l1t::HGCalMulticluster(clu);
 	// else mapSeedMulticluster[targetSeed].addConstituent(clu);
-
+    
 	for (unsigned int seed = 0; seed < targetSeeds.size(); seed++){
 	  
 	  double seedWeight = 1;
        	  if ( cluster_association_ == "energy" ) seedWeight = targetSeedsEnergy[seed]/totalTargetSeedEnergy;
-	
 	  if( mapSeedMulticluster[ targetSeeds[seed]].size()==0) {
 	    mapSeedMulticluster[targetSeeds[seed]] = l1t::HGCalMulticluster(clu, seedWeight) ;
 	  }
@@ -586,10 +630,20 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 	}
 	
     }
-    
+
+
     for(auto mclu : mapSeedMulticluster) {
       multiclustersTmp.emplace_back(mclu.second);
     }
+
+
+    nSeeds->Fill( seeds.size() );
+    hist2D->Write(hist2D->GetName(),TObject::kOverwrite);
+    hist2D_ew->Write(hist2D_ew->GetName(),TObject::kOverwrite);
+    nSeeds->Write(nSeeds->GetName(),TObject::kOverwrite);
+    file->Close();
+
+
     return multiclustersTmp;
 
 }
@@ -624,6 +678,16 @@ void HGCalMulticlusteringHistoImpl::clusterizeHisto( const std::vector<edm::Ptr<
     /* making the collection of multiclusters */
     finalizeClusters(multiclustersTmp, multiclusters, triggerGeometry);
 
+    std::cout << "size of seedPositionsEnergy = " << seedPositionsEnergy.size() << std::endl;
+    std::cout << "size of multiclustersTmp = " << multiclustersTmp.size() << std::endl;
+    std::cout << "size of multiclusters (out) = " << multiclusters.size() << std::endl;
+    std::cout << "size of clusterptrs = " << clustersPtrs.size() << std::endl;
+
+// size of seedPositionsEnergy = 2168
+// size of multiclustersTmp = 2165
+//   size of multiclusters (out) = 1927
+// size of clusterptrs = 69421
+
 }
 
 
@@ -652,6 +716,9 @@ finalizeClusters(std::vector<l1t::HGCalMulticluster>& multiclusters_in,
                 multicluster.centre().phi(),
                 0. );
         multicluster.setP4( multiclusterP4 );
+
+
+	//	std::cout << "mc pt =  "<< multicluster.pt() << std::endl;
 
         if( multicluster.pt() > ptC3dThreshold_ ){
             //compute shower shapes
