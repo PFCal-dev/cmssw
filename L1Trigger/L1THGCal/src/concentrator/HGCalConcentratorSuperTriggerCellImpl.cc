@@ -14,8 +14,18 @@ HGCalConcentratorSuperTriggerCellImpl::getSuperTriggerCellId(int detid) const {
     return TC_id.cell(); //scintillator
   } else {
     int TC_wafer = TC_id.wafer();
-    int TC_12th = ( TC_id.cell() & kSplit_ );
-    return TC_wafer<<kWafer_offset_ | TC_12th;
+
+    int split_0 = 0x3a;
+    int split_2 = 0x30;
+    int thickness = triggerTools_.thicknessIndex(detid);
+
+    int TC_12th = 0;
+    if ( thickness == 0 || thickness == 1)
+      TC_12th = ( TC_id.cell() & split_0 );
+    if ( thickness == 2)
+      TC_12th = ( TC_id.cell() & split_0 );
+    int wafer_offset = 6;
+    return TC_wafer<<wafer_offset | TC_12th;
   }
   
 }
