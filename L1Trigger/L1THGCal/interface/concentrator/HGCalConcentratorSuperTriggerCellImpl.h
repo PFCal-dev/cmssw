@@ -27,6 +27,7 @@ class HGCalConcentratorSuperTriggerCellImpl
     static const int kSplit_ = 0x3a;
     static const int kWafer_offset_ = 6;
     HGCalTriggerTools triggerTools_;
+    std::vector<unsigned> stcSize_;
 
     class SuperTriggerCell {
   

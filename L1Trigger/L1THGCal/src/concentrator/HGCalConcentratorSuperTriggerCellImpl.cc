@@ -3,7 +3,8 @@
 #include <unordered_map>
 
 HGCalConcentratorSuperTriggerCellImpl::
-HGCalConcentratorSuperTriggerCellImpl(const edm::ParameterSet& conf){}
+HGCalConcentratorSuperTriggerCellImpl(const edm::ParameterSet& conf)
+  : stcSize_(conf.getParameter< std::vector<unsigned> >("stcSize")){}
 
 
 int
@@ -14,18 +15,26 @@ HGCalConcentratorSuperTriggerCellImpl::getSuperTriggerCellId(int detid) const {
     return TC_id.cell(); //scintillator
   } else {
     int TC_wafer = TC_id.wafer();
-
-    int split_0 = 0x3a;
-    int split_2 = 0x30;
+    int split_12th = 0x3a;
+    int split_3rd  = 0x30;
     int thickness = triggerTools_.thicknessIndex(detid);
 
-    int TC_12th = 0;
-    if ( thickness == 0 || thickness == 1)
-      TC_12th = ( TC_id.cell() & split_0 );
-    if ( thickness == 2)
-      TC_12th = ( TC_id.cell() & split_0 );
+    int TC_12th = ( TC_id.cell() & split_12th );
+    int TC_3rd  = ( TC_id.cell() & split_3rd );
+
+    int TC_split = TC_12th;
+
+    if (stcSize_.at(thickness) == 16)
+      TC_split = TC_3rd;
+
+    std::cout << "thickness:split   " << thickness << " - " << TC_split << std::endl;
+
+    // if ( thickness == 0 || thickness == 1)
+    //   TC_12th = ( TC_id.cell() & split_0 );
+    // if ( thickness == 2)
+    //   TC_12th = ( TC_id.cell() & split_0 );
     int wafer_offset = 6;
-    return TC_wafer<<wafer_offset | TC_12th;
+    return TC_wafer<<wafer_offset | TC_split;
   }
   
 }
