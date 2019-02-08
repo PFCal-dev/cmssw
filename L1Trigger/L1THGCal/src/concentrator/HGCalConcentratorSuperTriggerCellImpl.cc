@@ -27,8 +27,6 @@ HGCalConcentratorSuperTriggerCellImpl::getSuperTriggerCellId(int detid) const {
     if (stcSize_.at(thickness) == 16)
       TC_split = TC_3rd;
 
-    std::cout << "thickness:split   " << thickness << " - " << TC_split << std::endl;
-
     // if ( thickness == 0 || thickness == 1)
     //   TC_12th = ( TC_id.cell() & split_0 );
     // if ( thickness == 2)

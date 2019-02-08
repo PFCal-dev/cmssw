@@ -519,7 +519,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 											   const std::vector<std::pair<GlobalPoint, double> > & seeds){
 
 
-   TFile * file = new TFile ("distance.root", "UPDATE");
+  TFile * file = new TFile ("distance.root", "UPDATE");
   TH1D * nSeeds = 0;
   TH2D * hist2D = 0;
   TH2D * hist2D_ew = 0;

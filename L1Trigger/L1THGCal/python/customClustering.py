@@ -96,8 +96,9 @@ def custom_3dclustering_histoMax(process,
     return process
 
 def custom_3dclustering_histoModifiedMax(process,
-        distance = 0.03,
         threshold = 5.,
+        distance_A = 0.03,
+        distance_B = 0,
         nBins_R = 36,
         nBins_Phi = 216,
         binSumsHisto = cms.vuint32(13,               #0
@@ -109,7 +110,9 @@ def custom_3dclustering_histoModifiedMax(process,
                                    )
         ):
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-    parameters_c3d.dR_multicluster = cms.double(distance)
+#    parameters_c3d.dR_multicluster = cms.double(distance)
+    parameters_c3d.dR_multicluster_A = cms.double(distance_A)
+    parameters_c3d.dR_multicluster_B = cms.double(distance_B)
     parameters_c3d.nBins_R_histo_multicluster = cms.uint32(nBins_R)
     parameters_c3d.nBins_Phi_histo_multicluster = cms.uint32(nBins_Phi)
     parameters_c3d.binSumsHisto = binSumsHisto
