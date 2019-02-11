@@ -110,7 +110,6 @@ def custom_3dclustering_histoSecondaryMax(process,
                                    )
         ):
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-#    parameters_c3d.dR_multicluster = cms.double(distance)
     parameters_c3d.dR_multicluster_A = cms.double(distance_A)
     parameters_c3d.dR_multicluster_B = cms.double(distance_B)
     parameters_c3d.nBins_R_histo_multicluster = cms.uint32(nBins_R)
