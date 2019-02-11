@@ -19,8 +19,8 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
   
     if(multiclusterAlgoType_=="HistoMaxC3d"){
       multiclusteringAlgoType_ = HistoMaxC3d;
-    }else if(multiclusterAlgoType_=="HistoModifiedMaxC3d"){
-      multiclusteringAlgoType_ = HistoModifiedMaxC3d;
+    }else if(multiclusterAlgoType_=="HistoSecondaryMaxC3d"){
+      multiclusteringAlgoType_ = HistoSecondaryMaxC3d;
     }else if(multiclusterAlgoType_=="HistoThresholdC3d"){
       multiclusteringAlgoType_ = HistoThresholdC3d;
     }else if(multiclusterAlgoType_=="HistoInterpolatedMaxC3d"){
@@ -183,7 +183,7 @@ HGCalMulticlusteringHistoImpl::Histogram HGCalMulticlusteringHistoImpl::fillSmoo
 
 
 
-std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::computeModifiedMaxSeeds( const Histogram & histoClusters ){
+std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::computeSecondaryMaxSeeds( const Histogram & histoClusters ){
 
   std::vector<std::pair<GlobalPoint, double > > seedPositions;
 
@@ -249,18 +249,12 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
                     }
 
                 }
-                // else{
-                //     primarySeedPositions[bin_R, bin_phi,z_side] = false;
-                // }
 
             }
 
         }
 
     }
-
-
-
 
 
     //Search for secondary seeds
@@ -316,31 +310,6 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
         }
 
     }
-
-
-
-
-
-    //TESTING
-
-    // TFile * file = new TFile ("ModMax.root", "RECREATE");
-    // TH2D * hist2D = new TH2D( "ModMax","",50,-0.5,49.5,250,-0.5,249.5);
-
-    // //    for(int z_side : {-1,1}){
-    // for(int z_side : {1}){
-    //     for(int bin_R = 0; bin_R<int(nBinsRHisto_); bin_R++){
-    //         for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
-
-    //             float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
-    //          //              std::cout << MIPT_seed << ", " << z_side <<", "<<bin_R<<", "<<bin_phi << ", " << primarySeedPositions[bin_R][bin_phi][z_side] << ", " << secondarySeedPositions[bin_R][bin_phi][z_side] << std::endl;
-    //          if ( primarySeedPositions[bin_R][bin_phi][z_side] ) hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
-    //          if ( secondarySeedPositions[bin_R][bin_phi][z_side] ) hist2D->Fill ( bin_R, bin_phi, MIPT_seed );
-    //      }
-    //  }
-    // }
-
-    // hist2D->Write();
-    // file->Close();
 
     return seedPositions;
 
@@ -612,7 +581,7 @@ void HGCalMulticlusteringHistoImpl::clusterizeHisto( const std::vector<edm::Ptr<
     if (multiclusteringAlgoType_ == HistoMaxC3d) seedPositionsEnergy = computeMaxSeeds(smoothRPhiHistoCluster);
     else if(multiclusteringAlgoType_ == HistoThresholdC3d) seedPositionsEnergy = computeThresholdSeeds(smoothRPhiHistoCluster);
     else if(multiclusteringAlgoType_ == HistoInterpolatedMaxC3d) seedPositionsEnergy = computeInterpolatedMaxSeeds(smoothRPhiHistoCluster);
-    else if(multiclusteringAlgoType_ == HistoModifiedMaxC3d) seedPositionsEnergy = computeModifiedMaxSeeds(smoothRPhiHistoCluster);
+    else if(multiclusteringAlgoType_ == HistoSecondaryMaxC3d) seedPositionsEnergy = computeSecondaryMaxSeeds(smoothRPhiHistoCluster);
     /* clusterize clusters around seeds */
     std::vector<l1t::HGCalMulticluster> multiclustersTmp = clusterSeedMulticluster(clustersPtrs,seedPositionsEnergy);
     
