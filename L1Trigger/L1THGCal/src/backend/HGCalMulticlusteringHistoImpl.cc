@@ -49,7 +49,7 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
     }
 
 }
-}
+
 
 float HGCalMulticlusteringHistoImpl::dR( const l1t::HGCalCluster & clu,
                                          const GlobalPoint & seed) const
@@ -468,11 +468,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
     std::map<int,l1t::HGCalMulticluster> mapSeedMulticluster;
     std::vector<l1t::HGCalMulticluster> multiclustersTmp;
-<<<<<<< HEAD
-    //total number of seeds = 216*36 = 7776
-=======
 
->>>>>>> Cleaning code for pull request
     for(auto & clu : clustersPtrs){
         int z_side = triggerTools_.zside(clu->detId());
 
