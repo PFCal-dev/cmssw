@@ -39,7 +39,6 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
 
     id_.reset( HGCalTriggerClusterIdentificationFactory::get()->create("HGCalTriggerClusterIdentificationBDT") );
     id_->initialize(conf.getParameter<edm::ParameterSet>("EGIdentification"));
-
     if(multiclusterAlgoType_.find("Histo")!=std::string::npos && nBinsRHisto_!=binsSumsHisto_.size()){
       throw cms::Exception("Inconsistent bin size") <<  "Inconsistent nBins_R_histo_multicluster ( " << nBinsRHisto_ << " ) and binSumsHisto ( " << binsSumsHisto_.size() << " ) size in HGCalMulticlustering\n";
     }
@@ -51,6 +50,7 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
 }
 
 
+
 float HGCalMulticlusteringHistoImpl::dR( const l1t::HGCalCluster & clu,
                                          const GlobalPoint & seed) const
 {
@@ -60,6 +60,8 @@ float HGCalMulticlusteringHistoImpl::dR( const l1t::HGCalCluster & clu,
     return (seed_proj - clu.centreProj() ).mag();
 
 }
+
+
 
 HGCalMulticlusteringHistoImpl::Histogram HGCalMulticlusteringHistoImpl::fillHistoClusters( const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs ){
 
@@ -306,11 +308,7 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
 
     return seedPositions;
 
-
-
-
 }
-
 
 
 
@@ -351,8 +349,6 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
                 isMax &= MIPT_seed>MIPT_W;
                 isMax &= MIPT_seed>MIPT_SW;
                 isMax &= MIPT_seed>MIPT_NW;
-
-
 
                 if(isMax){
 
@@ -440,7 +436,6 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
             for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
 
                 float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
-
                 bool isSeed = MIPT_seed > histoThreshold_;
 
                 if(isSeed){
@@ -470,10 +465,10 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
     std::vector<l1t::HGCalMulticluster> multiclustersTmp;
 
     for(auto & clu : clustersPtrs){
+
         int z_side = triggerTools_.zside(clu->detId());
 
         double minDist = drA_ + drB_*(2.3 - std::abs(clu->eta()) ) ;
-        double minDistToSeed = 999;
 
         std::vector<int> targetSeeds;
         std::vector<double> targetSeedsEnergy;
@@ -482,9 +477,6 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
             if( z_side*seeds[iseed].first.z()<0) continue;
             double d = this->dR(*clu, seeds[iseed].first);
-            if ( d < minDistToSeed ){
-              minDistToSeed = d;
-            }
 
             if ( d < minDist ){
               if ( cluster_association_ == "energy" ){
@@ -506,7 +498,6 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
                 }
 
             }
-
 
         }
 
@@ -531,9 +522,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
     }
 
 
-    for(auto mclu : mapSeedMulticluster) {
-      multiclustersTmp.emplace_back(mclu.second);
-    }
+    for(auto mclu : mapSeedMulticluster) multiclustersTmp.emplace_back(mclu.second);
 
     return multiclustersTmp;
 
@@ -557,27 +546,15 @@ void HGCalMulticlusteringHistoImpl::clusterizeHisto( const std::vector<edm::Ptr<
     Histogram smoothRPhiHistoCluster = fillSmoothRPhiHistoClusters(histoCluster);
 
     /* seeds determined with local maximum criteria */
-    //    std::vector<GlobalPoint> seedPositions;
     std::vector<std::pair<GlobalPoint, double> > seedPositionsEnergy;
     if (multiclusteringAlgoType_ == HistoMaxC3d) seedPositionsEnergy = computeMaxSeeds(smoothRPhiHistoCluster);
     else if(multiclusteringAlgoType_ == HistoThresholdC3d) seedPositionsEnergy = computeThresholdSeeds(smoothRPhiHistoCluster);
     else if(multiclusteringAlgoType_ == HistoInterpolatedMaxC3d) seedPositionsEnergy = computeInterpolatedMaxSeeds(smoothRPhiHistoCluster);
     else if(multiclusteringAlgoType_ == HistoSecondaryMaxC3d) seedPositionsEnergy = computeSecondaryMaxSeeds(smoothRPhiHistoCluster);
     /* clusterize clusters around seeds */
-    std::vector<l1t::HGCalMulticluster> multiclustersTmp = clusterSeedMulticluster(clustersPtrs,seedPositionsEnergy);
-    
+    std::vector<l1t::HGCalMulticluster> multiclustersTmp = clusterSeedMulticluster(clustersPtrs,seedPositionsEnergy);    
     /* making the collection of multiclusters */
     finalizeClusters(multiclustersTmp, multiclusters, triggerGeometry);
-
-    std::cout << "size of seedPositionsEnergy = " << seedPositionsEnergy.size() << std::endl;
-    std::cout << "size of multiclustersTmp = " << multiclustersTmp.size() << std::endl;
-    std::cout << "size of multiclusters (out) = " << multiclusters.size() << std::endl;
-    std::cout << "size of clusterptrs = " << clustersPtrs.size() << std::endl;
-
-// size of seedPositionsEnergy = 2168
-// size of multiclustersTmp = 2165
-//   size of multiclusters (out) = 1927
-// size of clusterptrs = 69421
 
 }
 
@@ -620,7 +597,6 @@ finalizeClusters(std::vector<l1t::HGCalMulticluster>& multiclusters_in,
             multicluster.eMax(shape_.eMax(multicluster));
             // fill quality flag
             multicluster.setHwQual(id_->decision(multicluster));
-
             // fill H/E
             multicluster.saveHOverE();            
 

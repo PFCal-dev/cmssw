@@ -46,7 +46,6 @@ void HGCalConcentratorProcessorSelection::run(const edm::Handle<l1t::HGCalTrigge
 
   for( const auto& module_trigcell : tc_modules ) {
     std::vector<l1t::HGCalTriggerCell> trigCellVecOutput;
- 
     switch(selectionType_){
       case thresholdSelect:
         concentratorProcImpl_->thresholdSelectImpl(module_trigcell.second, trigCellVecOutput);

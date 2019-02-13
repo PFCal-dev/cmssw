@@ -169,7 +169,7 @@ def custom_3dclustering_histoInterpolatedMax1stOrder(process, threshold = 0., di
 
 
 
-def custom_3dclustering_histoInterpolatedMax2ndOrder(process, threshold = 0.,):
+def custom_3dclustering_histoInterpolatedMax2ndOrder(process, threshold = 0.):
 
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
     parameters_c3d.neighbour_weights=cms.vdouble( -0.25, 0.5, -0.25,
