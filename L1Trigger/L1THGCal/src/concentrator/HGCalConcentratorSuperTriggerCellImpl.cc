@@ -17,7 +17,7 @@ HGCalConcentratorSuperTriggerCellImpl::getSuperTriggerCellId(int detid) const {
     int TC_wafer = TC_id.wafer();
     int split_12th = 0x3a;
     int split_3rd  = 0x30;
-    int thickness = triggerTools_.thicknessIndex(detid);
+    int thickness = triggerTools_.thicknessIndex(detid,true);
 
     int TC_12th = ( TC_id.cell() & split_12th );
     int TC_3rd  = ( TC_id.cell() & split_3rd );
