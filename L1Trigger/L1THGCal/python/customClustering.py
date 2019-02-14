@@ -114,33 +114,16 @@ def custom_3dclustering_histoSecondaryMax(process,
     return process
 
 
-dr_layerbylayer = ([0] + # no layer 0
-        [0.015]*7 + [0.020]*7 + [0.030]*7 + [0.040]*7 + # EM
-        [0.040]*6 + [0.050]*6 + # FH
-        [0.050]*12) # BH
-def custom_3dclustering_histoMax_variableDr(process,
-        distances = dr_layerbylayer,
-        nBins_R = 36,
-        nBins_Phi = 216,
-        binSumsHisto = binSums,                        
-        seed_threshold = 10,
-        ):
-    process = custom_3dclustering_histoMax(process, 0, nBins_R, nBins_Phi, binSumsHisto, seed_threshold)
-    parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-    parameters_c3d.dR_multicluster_byLayer = cms.vdouble(distances)
-    return process
-
-
-def custom_3dclustering_distanceAssociation(process):
+def custom_3dclustering_nearestNeighbourAssociation(process):
     
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-    parameters_c3d.cluster_association = cms.string('distance')
+    parameters_c3d.cluster_association = cms.string('NearestNeighbour')
     return process
 
-def custom_3dclustering_energyAssociation(process):
+def custom_3dclustering_EnergySplitAssociation(process):
     
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-    parameters_c3d.cluster_association = cms.string('energy')
+    parameters_c3d.cluster_association = cms.string('EnergySplit')
     return process
 
 

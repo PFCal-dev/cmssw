@@ -23,8 +23,12 @@ class HGCalConcentratorSuperTriggerCellImpl
   private:
 
     int getSuperTriggerCellId(int detid) const ;
-    static const int kSplit_ = 0x3a;
+    static const int kSplit12_ = 0x3a;
+    static const int kSplit3_ = 0x30;
     static const int kWafer_offset_ = 6;
+
+    static const int kSTCsize16_ = 16;
+
     HGCalTriggerTools triggerTools_;
     std::vector<unsigned> stcSize_;
 
