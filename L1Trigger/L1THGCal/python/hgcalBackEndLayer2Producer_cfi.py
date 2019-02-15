@@ -9,8 +9,9 @@ from L1Trigger.L1THGCal.customClustering import binSums, dr_layerbylayer
 
 C3d_parValues = cms.PSet( type_multicluster = cms.string('dRC3d'),
                           dR_multicluster = cms.double(0.01),
-                          dR_multicluster_A = cms.double(0.03),
-                          dR_multicluster_B = cms.double(0.03),
+                          radiusCoefficient_A = cms.double(0.03),
+                          radiusCoefficient_B = cms.double(0.03),
+                          clusteringRadiusStrategy= cms.string('Fixed'),
                           minPt_multicluster = cms.double(0.5), # minimum pt of the multicluster (GeV)
                           nBins_R_histo_multicluster = cms.uint32(36),
                           nBins_Phi_histo_multicluster = cms.uint32(216),

@@ -46,9 +46,14 @@ private:
       HistoInterpolatedMaxC3d
     };
 
-    enum ClusterStrategy{
+    enum ClusterAssociationStrategy{
       NearestNeighbour_,
       EnergySplit_
+    };
+
+    enum ClusterRadiusStrategy{
+      Fixed_,
+      LinearWithEta_
     };
 
     typedef std::map<std::array<int,3>,float> Histogram;
@@ -79,15 +84,19 @@ private:
     double radiusCoefficientA_;
     double radiusCoefficientB_;
     double ptC3dThreshold_;
-    MulticlusterType multiclusteringAlgoType_;
-    ClusterStrategy cluster_strategy_;
+
     std::string multiclusterAlgoType_;
+    std::string cluster_association_input_;
+    std::string cluster_radius_input_;
+    MulticlusterType multiclusteringAlgoType_;
+    ClusterAssociationStrategy cluster_association_strategy_;
+    ClusterRadiusStrategy cluster_radius_strategy_;
+
     unsigned nBinsRHisto_ = 36;
     unsigned nBinsPhiHisto_ = 216;
     std::vector<unsigned> binsSumsHisto_;
     double histoThreshold_ = 20.;
     std::vector<double> neighbour_weights_;
-    std::string cluster_association_;
 
     HGCalShowerShape shape_;
     HGCalTriggerTools triggerTools_;

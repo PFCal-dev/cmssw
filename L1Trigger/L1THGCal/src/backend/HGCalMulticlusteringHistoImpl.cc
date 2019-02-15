@@ -5,16 +5,17 @@
 
 HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::ParameterSet& conf ) :
     dr_(conf.getParameter<double>("dR_multicluster")),
-    radiusCoefficientA_(conf.getParameter<double>("dR_multicluster_A")),
-    radiusCoefficientB_(conf.getParameter<double>("dR_multicluster_B")),
+    radiusCoefficientA_(conf.getParameter<double>("radiusCoefficient_A")),
+    radiusCoefficientB_(conf.getParameter<double>("radiusCoefficient_B")),
     ptC3dThreshold_(conf.getParameter<double>("minPt_multicluster")),
     multiclusterAlgoType_(conf.getParameter<string>("type_multicluster")),    
+    cluster_association_input_(conf.getParameter<string>("cluster_association")),
+    cluster_radius_input_(conf.getParameter<string>("clusteringRadiusStrategy")),    
     nBinsRHisto_(conf.getParameter<unsigned>("nBins_R_histo_multicluster")),
     nBinsPhiHisto_(conf.getParameter<unsigned>("nBins_Phi_histo_multicluster")),
     binsSumsHisto_(conf.getParameter< std::vector<unsigned> >("binSumsHisto")),
     histoThreshold_(conf.getParameter<double>("threshold_histo_multicluster")),
-    neighbour_weights_(conf.getParameter< std::vector<double> >("neighbour_weights")),
-    cluster_association_(conf.getParameter<string>("cluster_association"))
+    neighbour_weights_(conf.getParameter< std::vector<double> >("neighbour_weights"))
 {    
   
     if(multiclusterAlgoType_=="HistoMaxC3d"){
@@ -30,15 +31,24 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
         << "Unknown Multiclustering type '" << multiclusterAlgoType_;
     } 
     
-    if(cluster_association_=="NearestNeighbour"){
-      cluster_strategy_ = NearestNeighbour_;
-    }else if(cluster_association_=="EnergySplit"){
-      cluster_strategy_ = EnergySplit_;
+    if(cluster_association_input_=="NearestNeighbour"){
+      cluster_association_strategy_ = NearestNeighbour_;
+    }else if(cluster_association_input_=="EnergySplit"){
+      cluster_association_strategy_ = EnergySplit_;
     }else {
       throw cms::Exception("HGCTriggerParameterError")
-        << "Unknown cluster association strategy'" << cluster_strategy_;
+        << "Unknown cluster association strategy'" << cluster_association_strategy_;
     } 
 
+    if(cluster_radius_input_=="Fixed"){
+      cluster_radius_strategy_ = Fixed_;
+    }else if(cluster_radius_input_=="LinearWithEta"){
+      cluster_radius_strategy_ = LinearWithEta_;
+    }else {
+      throw cms::Exception("HGCTriggerParameterError")
+        << "Unknown cluster radius strategy'" << cluster_radius_strategy_;
+    } 
+      
 
     edm::LogInfo("HGCalMulticlusterParameters") << "Multicluster dR: " << dr_
     <<"\nMulticluster minimum transverse-momentum: " << ptC3dThreshold_
@@ -486,7 +496,15 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
         int z_side = triggerTools_.zside(clu->detId());
 
-        double minDist = radiusCoefficientA_ + radiusCoefficientB_*(2.3 - std::abs(clu->eta()) ) ;
+
+        double minDist = 0;
+	if ( cluster_radius_strategy_ == Fixed_){
+	  minDist = dr_;
+	}
+
+	if ( cluster_radius_strategy_ == LinearWithEta_){
+	  minDist = radiusCoefficientA_ + radiusCoefficientB_*(2.3 - std::abs(clu->eta()) ) ;
+	}
 
         std::vector<pair<int,double> > targetSeedsEnergy;
 	//        std::vector<double> targetSeedsEnergy;
@@ -500,10 +518,10 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 	  double d = this->dR(*clu, seeds[iseed].first);
 
 	  if ( d < minDist ){
-              if ( cluster_strategy_ == EnergySplit_ ){
+              if ( cluster_association_strategy_ == EnergySplit_ ){
 	          targetSeedsEnergy.emplace_back( iseed, seedEnergy );
 	      }
-	      if ( cluster_strategy_ == NearestNeighbour_ ){
+	      if ( cluster_association_strategy_ == NearestNeighbour_ ){
 
                   minDist = d;
 
@@ -530,7 +548,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
         for (unsigned int seed = 0; seed < targetSeedsEnergy.size(); seed++){
           
           double seedWeight = 1;
-	  if ( cluster_strategy_ == EnergySplit_) seedWeight = targetSeedsEnergy[seed].second/totalTargetSeedEnergy;
+	  if ( cluster_association_strategy_ == EnergySplit_) seedWeight = targetSeedsEnergy[seed].second/totalTargetSeedEnergy;
           if( mapSeedMulticluster[ targetSeedsEnergy[seed].first ].size()==0) {
             mapSeedMulticluster[targetSeedsEnergy[seed].first] = l1t::HGCalMulticluster(clu, seedWeight) ;
           }

@@ -85,8 +85,8 @@ def custom_3dclustering_histoMax(process,
         seed_threshold = 10,
         ):
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-    parameters_c3d.dR_multicluster_A = cms.double(distance_A)
-    parameters_c3d.dR_multicluster_B = cms.double(distance_B)
+    parameters_c3d.radiusCoefficientA = cms.double(distance_A)
+    parameters_c3d.radiusCoefficientB = cms.double(distance_B)
     parameters_c3d.nBins_R_histo_multicluster = cms.uint32(nBins_R)
     parameters_c3d.nBins_Phi_histo_multicluster = cms.uint32(nBins_Phi)
     parameters_c3d.threshold_histo_multicluster = cms.double(threshold)
@@ -104,8 +104,8 @@ def custom_3dclustering_histoSecondaryMax(process,
         binSumsHisto = binSums,
         ):
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-    parameters_c3d.dR_multicluster_A = cms.double(distance_A)
-    parameters_c3d.dR_multicluster_B = cms.double(distance_B)
+    parameters_c3d.radiusCoefficientA = cms.double(distance_A)
+    parameters_c3d.radiusCoefficientB = cms.double(distance_B)
     parameters_c3d.nBins_R_histo_multicluster = cms.uint32(nBins_R)
     parameters_c3d.nBins_Phi_histo_multicluster = cms.uint32(nBins_Phi)
     parameters_c3d.binSumsHisto = binSumsHisto
@@ -113,14 +113,23 @@ def custom_3dclustering_histoSecondaryMax(process,
     parameters_c3d.type_multicluster = cms.string('HistoSecondaryMaxC3d')
     return process
 
+def custom_3dclustering_clusteringRadiusLinearWithEta(process):
+    
+    parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
+    parameters_c3d.clusteringRadiusStrategy = cms.string('LinearWithEta')
+    parameters_c3d.radiusCoefficient_A = cms.double(distance_A)
+    parameters_c3d.radiusCoefficient_B = cms.double(distance_B)
+
+    return process
 
 def custom_3dclustering_nearestNeighbourAssociation(process):
     
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
     parameters_c3d.cluster_association = cms.string('NearestNeighbour')
+
     return process
 
-def custom_3dclustering_EnergySplitAssociation(process):
+def custom_3dclustering_EnergySplitAssociation(process, distance):
     
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
     parameters_c3d.cluster_association = cms.string('EnergySplit')
