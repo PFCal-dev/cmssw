@@ -503,7 +503,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 	}
 
 	if ( cluster_radius_strategy_ == LinearWithEta_){
-	  minDist = radiusCoefficientA_ + radiusCoefficientB_*(2.3 - std::abs(clu->eta()) ) ;
+	  minDist = radiusCoefficientA_ + radiusCoefficientB_*(kMidRadius - std::abs(clu->eta()) ) ;
 	}
 
         std::vector<pair<int,double> > targetSeedsEnergy;

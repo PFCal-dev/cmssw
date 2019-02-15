@@ -106,6 +106,8 @@ private:
     static constexpr double kROverZMin_ = 0.09;
     static constexpr double kROverZMax_ = 0.52;
 
+    static constexpr double kMidRadius = 2.3;
+
 };
 
 #endif
