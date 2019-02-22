@@ -538,7 +538,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
             minDist = radiusCoefficientA_ + radiusCoefficientB_*(kMidRadius_ - std::abs(clu->eta()) ) ;
             break;
         default:
-            break
+            break;
         }
 
         std::vector<pair<int,double> > targetSeedsEnergy;
@@ -582,7 +582,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
         for (auto energy: targetSeedsEnergy){
 
             double seedWeight = 1;
-            if ( cluster_association_strategy_ == EnergySplit_) seedWeight = energy.second/totalTargetSeedEnergy;
+            if ( cluster_association_strategy_ == EnergySplit) seedWeight = energy.second/totalTargetSeedEnergy;
             if( mapSeedMulticluster[energy.first ].size()==0) {
                 mapSeedMulticluster[energy.first] = l1t::HGCalMulticluster(clu, seedWeight) ;
             }
