@@ -4,7 +4,21 @@
 
 HGCalConcentratorSuperTriggerCellImpl::
 HGCalConcentratorSuperTriggerCellImpl(const edm::ParameterSet& conf)
-  : stcSize_(conf.getParameter< std::vector<unsigned> >("stcSize")){}
+  : stcSize_(conf.getParameter< std::vector<unsigned> >("stcSize"))
+{
+
+    if ( stcSize_.size() != kNLayers_ ){
+        throw cms::Exception("HGCTriggerParameterError")
+            << "Inconsistent size of super trigger cell size vector" << stcSize_.size() ;
+    }
+    for(auto stc : stcSize_) {
+        if ( stc!=kSTCsize4_ && stc!=kSTCsize16_ ){
+            throw cms::Exception("HGCTriggerParameterError")
+              << "Super Trigger Cell should be of size 4 or 16" ;
+        }
+    }
+    
+}
 
 
 int

@@ -32,18 +32,18 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
     } 
     
     if(cluster_association_input_=="NearestNeighbour"){
-      cluster_association_strategy_ = NearestNeighbour_;
+      cluster_association_strategy_ = NearestNeighbour;
     }else if(cluster_association_input_=="EnergySplit"){
-      cluster_association_strategy_ = EnergySplit_;
+      cluster_association_strategy_ = EnergySplit;
     }else {
       throw cms::Exception("HGCTriggerParameterError")
         << "Unknown cluster association strategy'" << cluster_association_strategy_;
     } 
 
     if(cluster_radius_input_=="Fixed"){
-      cluster_radius_strategy_ = Fixed_;
+      cluster_radius_strategy_ = Fixed;
     }else if(cluster_radius_input_=="LinearWithEta"){
-      cluster_radius_strategy_ = LinearWithEta_;
+      cluster_radius_strategy_ = LinearWithEta;
     }else {
       throw cms::Exception("HGCTriggerParameterError")
         << "Unknown cluster radius strategy'" << cluster_radius_strategy_;
@@ -206,10 +206,6 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
     std::map<std::tuple<int,int,int>, bool> secondarySeedPositions;
     std::map<std::tuple<int,int,int>, bool> vetoPositions;
 
-    // std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, bool> > > primarySeedPositions;
-    // std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, bool> > > secondarySeedPositions;
-    // std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, bool> > > vetoPositions;
-
     //Search for primary seeds
     for(int z_side : {-1,1}){
 
@@ -245,7 +241,7 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
                 isMax &= MIPT_seed>MIPT_NW;
 
                 if(isMax){
-		  
+                  
 
                     float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
                     float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
@@ -253,22 +249,19 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
                     float y_seed = ROverZ_seed*sin(phi_seed);
 
                     seedPositionsEnergy.emplace_back( GlobalPoint(x_seed,y_seed,z_side), MIPT_seed );
-		    //                    primarySeedPositions[bin_R][bin_phi][z_side] =  true;
                     primarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] =  true;
 
-                    // vetoPositions[bin_R][binLeft][z_side] = true;
-                    // vetoPositions[bin_R][binRight][z_side] = true;
                     vetoPositions[std::make_tuple(bin_R,binLeft,z_side)] = true;
                     vetoPositions[std::make_tuple(bin_R,binRight,z_side)] = true;
                     if ( bin_R>0 ) {
-                      vetoPositions[std::make_tuple(bin_R-1,bin_phi,z_side)] = true;
-                      vetoPositions[std::make_tuple(bin_R-1,binRight,z_side)] = true;
-                      vetoPositions[std::make_tuple(bin_R-1,binLeft,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R-1,bin_phi,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R-1,binRight,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R-1,binLeft,z_side)] = true;
                     }
                     if ( bin_R<(int(nBinsRHisto_)-1) ) {
-                      vetoPositions[std::make_tuple(bin_R+1,bin_phi,z_side)] = true;
-		      vetoPositions[std::make_tuple(bin_R+1,binRight,z_side)] = true;
-		      vetoPositions[std::make_tuple(bin_R+1,binLeft,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R+1,bin_phi,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R+1,binRight,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R+1,binLeft,z_side)] = true;
                     }
 
                 }
@@ -288,15 +281,15 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
 
             for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
 
-              //Cannot be a secondary seed if already a primary seed, or adjacent to primary seed
-              if ( primarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] || vetoPositions[std::make_tuple(bin_R,bin_phi,z_side)] ) continue;
+                //Cannot be a secondary seed if already a primary seed, or adjacent to primary seed
+                if ( primarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] || vetoPositions[std::make_tuple(bin_R,bin_phi,z_side)] ) continue;
 
                 float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
                 bool isMax = MIPT_seed > histoThreshold_;
-
+                
                 float MIPT_S = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,bin_phi}}) : 0;
                 float MIPT_N = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,bin_phi}}) : 0;
-
+                
                 int binLeft = bin_phi - 1;
                 if( binLeft<0 ) binLeft += nBinsPhiHisto_;
                 int binRight = bin_phi + 1;
@@ -380,7 +373,6 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
 
                 if(isMax){
 
-
                     float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
                     float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
                     float x_seed = ROverZ_seed*cos(phi_seed);
@@ -434,11 +426,11 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
                 bool isMax = MIPT_seed>=(MIPT_pred+histoThreshold_);
                 
                 if(isMax){
-                  float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
-                  float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
-                  float x_seed = ROverZ_seed*cos(phi_seed);
-                  float y_seed = ROverZ_seed*sin(phi_seed);
-                  seedPositionsEnergy.emplace_back(  GlobalPoint(x_seed,y_seed,z_side), MIPT_seed);
+                    float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
+                    float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
+                    float x_seed = ROverZ_seed*cos(phi_seed);
+                    float y_seed = ROverZ_seed*sin(phi_seed);
+                    seedPositionsEnergy.emplace_back(  GlobalPoint(x_seed,y_seed,z_side), MIPT_seed);
                 }
                 
             }
@@ -501,15 +493,15 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
     for( unsigned int iseed=0; iseed<seeds.size(); iseed++ ){
 
-      if( z_side*seeds[iseed].z()<0) continue;
+        if( z_side*seeds[iseed].z()<0) continue;
 
-      double d = this->dR(*clu, seeds[iseed]);
-
-      if(d<minDist){
-	minDist = d;
-	targetSeed = iseed;
-      }
-
+        double d = this->dR(*clu, seeds[iseed]);
+ 
+        if(d<minDist){
+            minDist = d;
+            targetSeed = iseed;
+        }
+        
     }
 
     if(targetSeed<0) continue;
@@ -538,39 +530,41 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
 
         double minDist = 0;
-	if ( cluster_radius_strategy_ == Fixed_){
-	  minDist = dr_;
-	}
-
-	if ( cluster_radius_strategy_ == LinearWithEta_){
-	  minDist = radiusCoefficientA_ + radiusCoefficientB_*(kMidRadius - std::abs(clu->eta()) ) ;
-	}
+        switch ( cluster_radius_strategy_){
+        case Fixed:
+            minDist = dr_;
+            break;
+        case LinearWithEta:
+            minDist = radiusCoefficientA_ + radiusCoefficientB_*(kMidRadius_ - std::abs(clu->eta()) ) ;
+            break;
+        default:
+            break
+        }
 
         std::vector<pair<int,double> > targetSeedsEnergy;
-	//        std::vector<double> targetSeedsEnergy;
-
+    
         for( unsigned int iseed=0; iseed<seeds.size(); iseed++ ){
 
-	  GlobalPoint seedPosition = seeds[iseed].first;	  
-	  double seedEnergy = seeds[iseed].second;	  
+          GlobalPoint seedPosition = seeds[iseed].first;          
+          double seedEnergy = seeds[iseed].second;        
 
-	  if( z_side*seedPosition.z()<0) continue;
-	  double d = this->dR(*clu, seeds[iseed].first);
+          if( z_side*seedPosition.z()<0) continue;
+          double d = this->dR(*clu, seeds[iseed].first);
 
-	  if ( d < minDist ){
-              if ( cluster_association_strategy_ == EnergySplit_ ){
-	          targetSeedsEnergy.emplace_back( iseed, seedEnergy );
-	      }
-	      if ( cluster_association_strategy_ == NearestNeighbour_ ){
+          if ( d < minDist ){
+              if ( cluster_association_strategy_ == EnergySplit ){
+                  targetSeedsEnergy.emplace_back( iseed, seedEnergy );
+              }
+              if ( cluster_association_strategy_ == NearestNeighbour ){
 
                   minDist = d;
 
                   if ( targetSeedsEnergy.size()==0 ) {
-                    targetSeedsEnergy.emplace_back( iseed, seedEnergy );
+                      targetSeedsEnergy.emplace_back( iseed, seedEnergy );
                   }
                   else {
-                    targetSeedsEnergy.at(0).first = iseed ;
-                    targetSeedsEnergy.at(0).second = seedEnergy;
+                      targetSeedsEnergy.at(0).first = iseed ;
+                      targetSeedsEnergy.at(0).second = seedEnergy;
                   }
                 }
 
@@ -582,17 +576,17 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
         //Loop over target seeds and divide up the clusters energy
         double totalTargetSeedEnergy = 0;
         for (auto energy: targetSeedsEnergy){
-          totalTargetSeedEnergy+=energy.second;
+            totalTargetSeedEnergy+=energy.second;
         }
     
-        for (unsigned int seed = 0; seed < targetSeedsEnergy.size(); seed++){
-          
-          double seedWeight = 1;
-	  if ( cluster_association_strategy_ == EnergySplit_) seedWeight = targetSeedsEnergy[seed].second/totalTargetSeedEnergy;
-          if( mapSeedMulticluster[ targetSeedsEnergy[seed].first ].size()==0) {
-            mapSeedMulticluster[targetSeedsEnergy[seed].first] = l1t::HGCalMulticluster(clu, seedWeight) ;
-          }
-          mapSeedMulticluster[targetSeedsEnergy[seed].first].addConstituent(clu, true, seedWeight);   
+        for (auto energy: targetSeedsEnergy){
+
+            double seedWeight = 1;
+            if ( cluster_association_strategy_ == EnergySplit_) seedWeight = energy.second/totalTargetSeedEnergy;
+            if( mapSeedMulticluster[energy.first ].size()==0) {
+                mapSeedMulticluster[energy.first] = l1t::HGCalMulticluster(clu, seedWeight) ;
+            }
+            mapSeedMulticluster[energy.first].addConstituent(clu, true, seedWeight);   
           
         }
         

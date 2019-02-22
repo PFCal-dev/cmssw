@@ -28,6 +28,8 @@ class HGCalConcentratorSuperTriggerCellImpl
     static const int kWafer_offset_ = 6;
 
     static const int kSTCsize16_ = 16;
+    static const int kSTCsize4_ = 4;
+    static const int kNLayers_ = 3;
 
     HGCalTriggerTools triggerTools_;
     std::vector<unsigned> stcSize_;
