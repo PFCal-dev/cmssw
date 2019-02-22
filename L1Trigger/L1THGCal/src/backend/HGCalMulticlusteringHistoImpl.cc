@@ -477,48 +477,6 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
 }
 
 std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
-                                                                                           const std::vector<GlobalPoint> & seeds){
-
-
-  std::map<int,l1t::HGCalMulticluster> mapSeedMulticluster;
-  std::vector<l1t::HGCalMulticluster> multiclustersTmp;
-
-  for(auto & clu : clustersPtrs){
-
-
-    int z_side = triggerTools_.zside(clu->detId());
-
-    double minDist = dr_;
-    int targetSeed = -1;
-
-    for( unsigned int iseed=0; iseed<seeds.size(); iseed++ ){
-
-        if( z_side*seeds[iseed].z()<0) continue;
-
-        double d = this->dR(*clu, seeds[iseed]);
- 
-        if(d<minDist){
-            minDist = d;
-            targetSeed = iseed;
-        }
-        
-    }
-
-    if(targetSeed<0) continue;
-
-    if(mapSeedMulticluster[targetSeed].size()==0) mapSeedMulticluster[targetSeed] = l1t::HGCalMulticluster(clu);
-    else mapSeedMulticluster[targetSeed].addConstituent(clu);
-
-  }
-
-  for(auto mclu : mapSeedMulticluster) multiclustersTmp.emplace_back(mclu.second);
-
-  return multiclustersTmp;
-
-
-}
-
-std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
                                                                                            const std::vector<std::pair<GlobalPoint, double> > & seeds){
 
     std::map<int,l1t::HGCalMulticluster> mapSeedMulticluster;

@@ -74,9 +74,6 @@ private:
     std::vector<std::pair<GlobalPoint, double> > computeThresholdSeeds( const Histogram & histoClusters );
 
     std::vector<l1t::HGCalMulticluster> clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
-								const std::vector<GlobalPoint> & seeds);
-
-    std::vector<l1t::HGCalMulticluster> clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
 								const std::vector<std::pair<GlobalPoint, double> > & seeds);
 
 
