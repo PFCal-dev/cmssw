@@ -503,34 +503,34 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
     
         for( unsigned int iseed=0; iseed<seeds.size(); iseed++ ){
 
-          GlobalPoint seedPosition = seeds[iseed].first;          
-          double seedEnergy = seeds[iseed].second;        
+            GlobalPoint seedPosition = seeds[iseed].first;          
+            double seedEnergy = seeds[iseed].second;        
 
-          if( z_side*seedPosition.z()<0) continue;
-          double d = this->dR(*clu, seeds[iseed].first);
+            if( z_side*seedPosition.z()<0) continue;
+            double d = this->dR(*clu, seeds[iseed].first);
 
-          if ( d < minDist ){
-              if ( cluster_association_strategy_ == EnergySplit ){
-                  targetSeedsEnergy.emplace_back( iseed, seedEnergy );
-              }
-              if ( cluster_association_strategy_ == NearestNeighbour ){
-
-                  minDist = d;
-
-                  if ( targetSeedsEnergy.size()==0 ) {
-                      targetSeedsEnergy.emplace_back( iseed, seedEnergy );
-                  }
-                  else {
-                      targetSeedsEnergy.at(0).first = iseed ;
-                      targetSeedsEnergy.at(0).second = seedEnergy;
-                  }
+            if ( d < minDist ){
+                if ( cluster_association_strategy_ == EnergySplit ){
+                    targetSeedsEnergy.emplace_back( iseed, seedEnergy );
                 }
+                if ( cluster_association_strategy_ == NearestNeighbour ){
 
+                    minDist = d;
+
+                    if ( targetSeedsEnergy.empty() ) {
+                        targetSeedsEnergy.emplace_back( iseed, seedEnergy );
+                    }
+                    else {
+                        targetSeedsEnergy.at(0).first = iseed ;
+                        targetSeedsEnergy.at(0).second = seedEnergy;
+                    }
+                }
+                
             }
-
+            
         }
-
-        if(targetSeedsEnergy.size()==0) continue;
+        
+        if(targetSeedsEnergy.empty()) continue;
         //Loop over target seeds and divide up the clusters energy
         double totalTargetSeedEnergy = 0;
         for (auto energy: targetSeedsEnergy){
@@ -541,7 +541,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
             double seedWeight = 1;
             if ( cluster_association_strategy_ == EnergySplit) seedWeight = energy.second/totalTargetSeedEnergy;
-            if( mapSeedMulticluster[energy.first ].size()==0) {
+            if( mapSeedMulticluster[energy.first ].empty()) {
                 mapSeedMulticluster[energy.first] = l1t::HGCalMulticluster(clu, seedWeight) ;
             }
             mapSeedMulticluster[energy.first].addConstituent(clu, true, seedWeight);   
