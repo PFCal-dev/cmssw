@@ -541,7 +541,7 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
 
             double seedWeight = 1;
             if ( cluster_association_strategy_ == EnergySplit) seedWeight = energy.second/totalTargetSeedEnergy;
-            if( mapSeedMulticluster[energy.first ].empty()) {
+            if( mapSeedMulticluster[energy.first].size()==0) {
                 mapSeedMulticluster[energy.first] = l1t::HGCalMulticluster(clu, seedWeight) ;
             }
             mapSeedMulticluster[energy.first].addConstituent(clu, true, seedWeight);   
