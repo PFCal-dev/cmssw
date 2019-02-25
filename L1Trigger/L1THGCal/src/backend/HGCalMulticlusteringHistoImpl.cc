@@ -198,141 +198,6 @@ HGCalMulticlusteringHistoImpl::Histogram HGCalMulticlusteringHistoImpl::fillSmoo
 
 
 
-std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::computeSecondaryMaxSeeds( const Histogram & histoClusters ){
-
-    std::vector<std::pair<GlobalPoint, double > > seedPositionsEnergy;
-  
-    std::map<std::tuple<int,int,int>, bool> primarySeedPositions;
-    std::map<std::tuple<int,int,int>, bool> secondarySeedPositions;
-    std::map<std::tuple<int,int,int>, bool> vetoPositions;
-
-    //Search for primary seeds
-    for(int z_side : {-1,1}){
-
-        for(int bin_R = 0; bin_R<int(nBinsRHisto_); bin_R++){
-
-            for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
-
-                float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
-                bool isMax = MIPT_seed > histoThreshold_;
-
-                float MIPT_S = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,bin_phi}}) : 0;
-                float MIPT_N = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,bin_phi}}) : 0;
-
-                int binLeft = bin_phi - 1;
-                if( binLeft<0 ) binLeft += nBinsPhiHisto_;
-                int binRight = bin_phi + 1;
-                if( binRight>=int(nBinsPhiHisto_) ) binRight -= nBinsPhiHisto_;
-
-                float MIPT_W = histoClusters.at({{z_side,bin_R,binLeft}});
-                float MIPT_E = histoClusters.at({{z_side,bin_R,binRight}});
-                float MIPT_NW = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,binLeft}}) : 0;
-                float MIPT_NE = bin_R>0 ?histoClusters.at({{z_side,bin_R-1,binRight}}) : 0;
-                float MIPT_SW = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,binLeft}}) : 0;
-                float MIPT_SE = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,binRight}}) : 0;
-
-                isMax &= MIPT_seed>=MIPT_S;
-                isMax &= MIPT_seed>MIPT_N;
-                isMax &= MIPT_seed>=MIPT_E;
-                isMax &= MIPT_seed>=MIPT_SE;
-                isMax &= MIPT_seed>=MIPT_NE;
-                isMax &= MIPT_seed>MIPT_W;
-                isMax &= MIPT_seed>MIPT_SW;
-                isMax &= MIPT_seed>MIPT_NW;
-
-                if(isMax){
-                  
-
-                    float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
-                    float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
-                    float x_seed = ROverZ_seed*cos(phi_seed);
-                    float y_seed = ROverZ_seed*sin(phi_seed);
-
-                    seedPositionsEnergy.emplace_back( GlobalPoint(x_seed,y_seed,z_side), MIPT_seed );
-                    primarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] =  true;
-
-                    vetoPositions[std::make_tuple(bin_R,binLeft,z_side)] = true;
-                    vetoPositions[std::make_tuple(bin_R,binRight,z_side)] = true;
-                    if ( bin_R>0 ) {
-                        vetoPositions[std::make_tuple(bin_R-1,bin_phi,z_side)] = true;
-                        vetoPositions[std::make_tuple(bin_R-1,binRight,z_side)] = true;
-                        vetoPositions[std::make_tuple(bin_R-1,binLeft,z_side)] = true;
-                    }
-                    if ( bin_R<(int(nBinsRHisto_)-1) ) {
-                        vetoPositions[std::make_tuple(bin_R+1,bin_phi,z_side)] = true;
-                        vetoPositions[std::make_tuple(bin_R+1,binRight,z_side)] = true;
-                        vetoPositions[std::make_tuple(bin_R+1,binLeft,z_side)] = true;
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-
-
-    //Search for secondary seeds
-
-    for(int z_side : {-1,1}){
-
-        for(int bin_R = 0; bin_R<int(nBinsRHisto_); bin_R++){
-
-            for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
-
-                //Cannot be a secondary seed if already a primary seed, or adjacent to primary seed
-                if ( primarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] || vetoPositions[std::make_tuple(bin_R,bin_phi,z_side)] ) continue;
-
-                float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
-                bool isMax = MIPT_seed > histoThreshold_;
-                
-                float MIPT_S = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,bin_phi}}) : 0;
-                float MIPT_N = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,bin_phi}}) : 0;
-                
-                int binLeft = bin_phi - 1;
-                if( binLeft<0 ) binLeft += nBinsPhiHisto_;
-                int binRight = bin_phi + 1;
-                if( binRight>=int(nBinsPhiHisto_) ) binRight -= nBinsPhiHisto_;
-
-                float MIPT_W = histoClusters.at({{z_side,bin_R,binLeft}});
-                float MIPT_E = histoClusters.at({{z_side,bin_R,binRight}});
-                float MIPT_NW = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,binLeft}}) : 0;
-                float MIPT_NE = bin_R>0 ?histoClusters.at({{z_side,bin_R-1,binRight}}) : 0;
-                float MIPT_SW = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,binLeft}}) : 0;
-                float MIPT_SE = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,binRight}}) : 0;
-
-
-                if (  !vetoPositions[std::make_tuple(bin_R+1,bin_phi,z_side)]  ) isMax &= MIPT_seed>=MIPT_S;
-                if (  !vetoPositions[std::make_tuple(bin_R-1,bin_phi,z_side)]  ) isMax &= MIPT_seed>MIPT_N;
-                if (  !vetoPositions[std::make_tuple(bin_R,binRight,z_side)]  ) isMax &= MIPT_seed>=MIPT_E;
-                if (  !vetoPositions[std::make_tuple(bin_R+1,binRight,z_side)]  ) isMax &= MIPT_seed>=MIPT_SE;
-                if (  !vetoPositions[std::make_tuple(bin_R-1,binRight,z_side)]  ) isMax &= MIPT_seed>=MIPT_NE;
-                if (  !vetoPositions[std::make_tuple(bin_R,binLeft,z_side)]  ) isMax &= MIPT_seed>MIPT_W;
-                if (  !vetoPositions[std::make_tuple(bin_R+1,binLeft,z_side)]  ) isMax &= MIPT_seed>MIPT_SW;
-                if (  !vetoPositions[std::make_tuple(bin_R-1,binLeft,z_side)]  ) isMax &= MIPT_seed>MIPT_NW;
-
-                if(isMax){
-                    float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
-                    float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
-                    float x_seed = ROverZ_seed*cos(phi_seed);
-                    float y_seed = ROverZ_seed*sin(phi_seed);
-                    seedPositionsEnergy.emplace_back( GlobalPoint(x_seed,y_seed,z_side), MIPT_seed );
-                    secondarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] =  true;
-                }
-
-            }
-
-        }
-
-    }
-
-    return seedPositionsEnergy;
-
-}
-
-
-
 std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::computeMaxSeeds( const Histogram & histoClusters ){
 
     std::vector<std::pair<GlobalPoint, double > > seedPositionsEnergy;
@@ -344,8 +209,8 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
             for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
 
                 float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
-                bool isMax = MIPT_seed > histoThreshold_;
-                if (!isMax) continue;
+		bool isMax = MIPT_seed > histoThreshold_;
+		if (!isMax) continue;
 
                 float MIPT_S = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,bin_phi}}) : 0;
                 float MIPT_N = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,bin_phi}}) : 0;
@@ -475,6 +340,145 @@ std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::com
     return seedPositionsEnergy;
 
 }
+
+
+
+std::vector<std::pair<GlobalPoint, double > > HGCalMulticlusteringHistoImpl::computeSecondaryMaxSeeds( const Histogram & histoClusters ){
+
+    std::vector<std::pair<GlobalPoint, double > > seedPositionsEnergy;
+  
+    std::map<std::tuple<int,int,int>, bool> primarySeedPositions;
+    std::map<std::tuple<int,int,int>, bool> secondarySeedPositions;
+    std::map<std::tuple<int,int,int>, bool> vetoPositions;
+
+    //Search for primary seeds
+    for(int z_side : {-1,1}){
+
+        for(int bin_R = 0; bin_R<int(nBinsRHisto_); bin_R++){
+
+            for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
+
+                float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
+                bool isMax = MIPT_seed > histoThreshold_;
+
+                if (!isMax) continue;
+
+                float MIPT_S = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,bin_phi}}) : 0;
+                float MIPT_N = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,bin_phi}}) : 0;
+
+                int binLeft = bin_phi - 1;
+                if( binLeft<0 ) binLeft += nBinsPhiHisto_;
+                int binRight = bin_phi + 1;
+                if( binRight>=int(nBinsPhiHisto_) ) binRight -= nBinsPhiHisto_;
+
+                float MIPT_W = histoClusters.at({{z_side,bin_R,binLeft}});
+                float MIPT_E = histoClusters.at({{z_side,bin_R,binRight}});
+                float MIPT_NW = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,binLeft}}) : 0;
+                float MIPT_NE = bin_R>0 ?histoClusters.at({{z_side,bin_R-1,binRight}}) : 0;
+                float MIPT_SW = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,binLeft}}) : 0;
+                float MIPT_SE = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,binRight}}) : 0;
+
+                isMax &= MIPT_seed>=MIPT_S;
+                isMax &= MIPT_seed>MIPT_N;
+                isMax &= MIPT_seed>=MIPT_E;
+                isMax &= MIPT_seed>=MIPT_SE;
+                isMax &= MIPT_seed>=MIPT_NE;
+                isMax &= MIPT_seed>MIPT_W;
+                isMax &= MIPT_seed>MIPT_SW;
+                isMax &= MIPT_seed>MIPT_NW;
+
+                if(isMax){
+                  
+
+                    float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
+                    float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
+                    float x_seed = ROverZ_seed*cos(phi_seed);
+                    float y_seed = ROverZ_seed*sin(phi_seed);
+
+                    seedPositionsEnergy.emplace_back( GlobalPoint(x_seed,y_seed,z_side), MIPT_seed );
+                    primarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] =  true;
+
+                    vetoPositions[std::make_tuple(bin_R,binLeft,z_side)] = true;
+                    vetoPositions[std::make_tuple(bin_R,binRight,z_side)] = true;
+                    if ( bin_R>0 ) {
+                        vetoPositions[std::make_tuple(bin_R-1,bin_phi,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R-1,binRight,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R-1,binLeft,z_side)] = true;
+                    }
+                    if ( bin_R<(int(nBinsRHisto_)-1) ) {
+                        vetoPositions[std::make_tuple(bin_R+1,bin_phi,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R+1,binRight,z_side)] = true;
+                        vetoPositions[std::make_tuple(bin_R+1,binLeft,z_side)] = true;
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+    //Search for secondary seeds
+
+    for(int z_side : {-1,1}){
+
+        for(int bin_R = 0; bin_R<int(nBinsRHisto_); bin_R++){
+
+            for(int bin_phi = 0; bin_phi<int(nBinsPhiHisto_); bin_phi++){
+
+                //Cannot be a secondary seed if already a primary seed, or adjacent to primary seed
+                if ( primarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] || vetoPositions[std::make_tuple(bin_R,bin_phi,z_side)] ) continue;
+
+                float MIPT_seed = histoClusters.at({{z_side,bin_R,bin_phi}});
+                bool isMax = MIPT_seed > histoThreshold_;
+                
+                float MIPT_S = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,bin_phi}}) : 0;
+                float MIPT_N = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,bin_phi}}) : 0;
+                
+                int binLeft = bin_phi - 1;
+                if( binLeft<0 ) binLeft += nBinsPhiHisto_;
+                int binRight = bin_phi + 1;
+                if( binRight>=int(nBinsPhiHisto_) ) binRight -= nBinsPhiHisto_;
+
+                float MIPT_W = histoClusters.at({{z_side,bin_R,binLeft}});
+                float MIPT_E = histoClusters.at({{z_side,bin_R,binRight}});
+                float MIPT_NW = bin_R>0 ? histoClusters.at({{z_side,bin_R-1,binLeft}}) : 0;
+                float MIPT_NE = bin_R>0 ?histoClusters.at({{z_side,bin_R-1,binRight}}) : 0;
+                float MIPT_SW = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,binLeft}}) : 0;
+                float MIPT_SE = bin_R<(int(nBinsRHisto_)-1) ? histoClusters.at({{z_side,bin_R+1,binRight}}) : 0;
+
+
+                if (  !vetoPositions[std::make_tuple(bin_R+1,bin_phi,z_side)]  ) isMax &= MIPT_seed>=MIPT_S;
+                if (  !vetoPositions[std::make_tuple(bin_R-1,bin_phi,z_side)]  ) isMax &= MIPT_seed>MIPT_N;
+                if (  !vetoPositions[std::make_tuple(bin_R,binRight,z_side)]  ) isMax &= MIPT_seed>=MIPT_E;
+                if (  !vetoPositions[std::make_tuple(bin_R+1,binRight,z_side)]  ) isMax &= MIPT_seed>=MIPT_SE;
+                if (  !vetoPositions[std::make_tuple(bin_R-1,binRight,z_side)]  ) isMax &= MIPT_seed>=MIPT_NE;
+                if (  !vetoPositions[std::make_tuple(bin_R,binLeft,z_side)]  ) isMax &= MIPT_seed>MIPT_W;
+                if (  !vetoPositions[std::make_tuple(bin_R+1,binLeft,z_side)]  ) isMax &= MIPT_seed>MIPT_SW;
+                if (  !vetoPositions[std::make_tuple(bin_R-1,binLeft,z_side)]  ) isMax &= MIPT_seed>MIPT_NW;
+
+                if(isMax){
+                    float ROverZ_seed = kROverZMin_ + (bin_R+0.5) * (kROverZMax_-kROverZMin_)/nBinsRHisto_;
+                    float phi_seed = -M_PI + (bin_phi+0.5) * 2*M_PI/nBinsPhiHisto_;
+                    float x_seed = ROverZ_seed*cos(phi_seed);
+                    float y_seed = ROverZ_seed*sin(phi_seed);
+                    seedPositionsEnergy.emplace_back( GlobalPoint(x_seed,y_seed,z_side), MIPT_seed );
+                    secondarySeedPositions[std::make_tuple(bin_R,bin_phi,z_side)] =  true;
+                }
+
+            }
+
+        }
+
+    }
+
+    return seedPositionsEnergy;
+
+}
+
+
 
 std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
                                                                                            const std::vector<std::pair<GlobalPoint, double> > & seeds){
