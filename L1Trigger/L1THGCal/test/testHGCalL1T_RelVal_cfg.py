@@ -23,14 +23,14 @@ process.load('Configuration.StandardSequences.DigiToRaw_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
-
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(1)
 )
 
 # Input source
 process.source = cms.Source("PoolSource",
-       fileNames = cms.untracked.vstring('/store/relval/CMSSW_9_3_0/RelValSinglePiPt25Eta1p7_2p7/GEN-SIM-DIGI-RAW/93X_upgrade2023_realistic_v2_2023D17noPU-v1/00000/240935CF-1C9B-E711-9F7D-0025905A60BE.root'),
+       #fileNames = cms.untracked.vstring('/store/relval/CMSSW_9_3_0/RelValSinglePiPt25Eta1p7_2p7/GEN-SIM-DIGI-RAW/93X_upgrade2023_realistic_v2_2023D17noPU-v1/00000/240935CF-1C9B-E711-9F7D-0025905A60BE.root'),
+       fileNames = cms.untracked.vstring('/store/mc/PhaseIIFall17D/SingleE_FlatPt-2to100/GEN-SIM-DIGI-RAW/L1TPU200_93X_upgrade2023_realistic_v5-v1/80000/FEEE84F9-EA37-E811-B2E7-141877638819.root'),
        inputCommands=cms.untracked.vstring(
            'keep *',
            'drop l1tEMTFHit2016Extras_simEmtfDigis_CSC_HLT',
@@ -65,6 +65,10 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic', '')
 # load HGCAL TPG simulation
 process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
 process.hgcl1tpg_step = cms.Path(process.hgcalTriggerPrimitives)
+
+# use super trigger cells
+from L1Trigger.L1THGCal.customTriggerCellSelect import custom_triggercellselect_supertriggercell
+custom_triggercellselect_supertriggercell(process)
 
 # Change to V7 trigger geometry for older samples
 #  from L1Trigger.L1THGCal.customTriggerGeometry import custom_geometry_ZoltanSplit_V7
