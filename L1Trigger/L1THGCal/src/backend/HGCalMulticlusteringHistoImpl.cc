@@ -10,7 +10,6 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
     ptC3dThreshold_(conf.getParameter<double>("minPt_multicluster")),
     multiclusterAlgoType_(conf.getParameter<string>("type_multicluster")),    
     cluster_association_input_(conf.getParameter<string>("cluster_association")),
-    cluster_radius_input_(conf.getParameter<string>("clusteringRadiusStrategy")),    
     nBinsRHisto_(conf.getParameter<unsigned>("nBins_R_histo_multicluster")),
     nBinsPhiHisto_(conf.getParameter<unsigned>("nBins_Phi_histo_multicluster")),
     binsSumsHisto_(conf.getParameter< std::vector<unsigned> >("binSumsHisto")),
@@ -39,16 +38,6 @@ HGCalMulticlusteringHistoImpl::HGCalMulticlusteringHistoImpl( const edm::Paramet
       throw cms::Exception("HGCTriggerParameterError")
         << "Unknown cluster association strategy'" << cluster_association_strategy_;
     } 
-
-    if(cluster_radius_input_=="Fixed"){
-      cluster_radius_strategy_ = Fixed;
-    }else if(cluster_radius_input_=="LinearWithEta"){
-      cluster_radius_strategy_ = LinearWithEta;
-    }else {
-      throw cms::Exception("HGCTriggerParameterError")
-        << "Unknown cluster radius strategy'" << cluster_radius_strategy_;
-    } 
-      
 
     edm::LogInfo("HGCalMulticlusterParameters") << "Multicluster dR: " << dr_
     <<"\nMulticluster minimum transverse-momentum: " << ptC3dThreshold_
@@ -491,17 +480,10 @@ std::vector<l1t::HGCalMulticluster> HGCalMulticlusteringHistoImpl::clusterSeedMu
         int z_side = triggerTools_.zside(clu->detId());
 
 
-        double minDist = 0;
-        switch ( cluster_radius_strategy_){
-        case Fixed:
-            minDist = dr_;
-            break;
-        case LinearWithEta:
-            minDist = radiusCoefficientA_ + radiusCoefficientB_*(kMidRadius_ - std::abs(clu->eta()) ) ;
-            break;
-        default:
-            break;
-        }
+        double radiusCoefficientA = dr_byLayer_coefficientA_.empty() ? dr_ : dr_byLayer_coefficientA_.at(triggerTools_.layerWithOffset(clu->detId())); // use at() to get the assert, for the moment
+        double radiusCoefficientB = dr_byLayer_coefficientB_.empty() ? 0 : dr_byLayer_coefficientB_.at(triggerTools_.layerWithOffset(clu->detId())); // use at() to get the assert, for the moment
+
+        double minDist = radiusCoefficientA + radiusCoefficientB*(kMidRadius_ - std::abs(clu->eta()) ) ;
 
         std::vector<pair<int,double> > targetSeedsEnergy;
     

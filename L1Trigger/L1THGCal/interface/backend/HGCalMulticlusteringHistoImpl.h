@@ -22,20 +22,22 @@ public:
     {
         triggerTools_.eventSetup(es);
         shape_.eventSetup(es);
-        if (!dr_byLayer_.empty() && (dr_byLayer_.size()-1) != triggerTools_.lastLayerBH()) {
+        if ( (!dr_byLayer_coefficientA_.empty() && (dr_byLayer_coefficientA_.size()-1) != triggerTools_.lastLayerBH())
+             || (!dr_byLayer_coefficientB_.empty() && (dr_byLayer_coefficientB_.size()-1) != triggerTools_.lastLayerBH())
+             ) {
             throw cms::Exception("Configuration") << 
-                "The per-layer dR values go up to " << (dr_byLayer_.size()-1) << 
-                ", while layers go up to " << triggerTools_.lastLayerBH() << "\n";
+                "The per-layer dR values go up to " << (dr_byLayer_coefficientA_.size()-1) << 
+              "(A) and " << (dr_byLayer_coefficientB_.size()-1) << "(B), while layers go up to " << triggerTools_.lastLayerBH() << "\n";
         }
     }
 
     float dR( const l1t::HGCalCluster & clu,
-	      const GlobalPoint & seed ) const;
+              const GlobalPoint & seed ) const;
 
     void clusterizeHisto( const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtr,
-			  l1t::HGCalMulticlusterBxCollection & multiclusters,
-			  const HGCalTriggerGeometryBase & triggerGeometry
-			  );
+                          l1t::HGCalMulticlusterBxCollection & multiclusters,
+                          const HGCalTriggerGeometryBase & triggerGeometry
+                          );
 
 
 private:
@@ -51,17 +53,12 @@ private:
       EnergySplit
     };
 
-    enum ClusterRadiusStrategy{
-      Fixed,
-      LinearWithEta
-    };
-
     typedef std::map<std::array<int,3>,float> Histogram;
 
     Histogram fillHistoClusters( const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs );
 
     Histogram fillSmoothPhiHistoClusters( const Histogram & histoClusters,
-					  const vector<unsigned> & binSums );
+                                          const vector<unsigned> & binSums );
 
     Histogram fillSmoothRPhiHistoClusters( const Histogram & histoClusters );
 
@@ -74,7 +71,7 @@ private:
     std::vector<std::pair<GlobalPoint, double> > computeThresholdSeeds( const Histogram & histoClusters );
 
     std::vector<l1t::HGCalMulticluster> clusterSeedMulticluster(const std::vector<edm::Ptr<l1t::HGCalCluster>> & clustersPtrs,
-								const std::vector<std::pair<GlobalPoint, double> > & seeds);
+                                                                const std::vector<std::pair<GlobalPoint, double> > & seeds);
 
 
     void finalizeClusters(std::vector<l1t::HGCalMulticluster>&,
@@ -82,16 +79,14 @@ private:
             const HGCalTriggerGeometryBase&);
     
     double dr_;
-    double radiusCoefficientA_;
-    double radiusCoefficientB_;
+    std::vector<double> dr_byLayer_coefficientA_;
+    std::vector<double> dr_byLayer_coefficientB_;
     double ptC3dThreshold_;
 
     std::string multiclusterAlgoType_;
     std::string cluster_association_input_;
-    std::string cluster_radius_input_;
     MulticlusterType multiclusteringAlgoType_;
     ClusterAssociationStrategy cluster_association_strategy_;
-    ClusterRadiusStrategy cluster_radius_strategy_;
 
     unsigned nBinsRHisto_ = 36;
     unsigned nBinsPhiHisto_ = 216;
