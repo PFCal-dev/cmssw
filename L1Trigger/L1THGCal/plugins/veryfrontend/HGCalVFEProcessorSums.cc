@@ -16,7 +16,7 @@ HGCalVFEProcessorSums(const edm::ParameterSet& conf) : HGCalVFEProcessorBase(con
   vfeLinearizationImpl_ = std::make_unique<HGCalVFELinearizationImpl>(conf);
   vfeSummationImpl_ = std::make_unique<HGCalVFESummationImpl>(conf);
   vfeCompressionImpl_ = std::make_unique<HGCalVFECompressionImpl>(conf);
-  calibration_ = std::make_unique<HGCalTriggerCellCalibration>( conf.getParameterSet("calib_parameters") );
+  calibration_ = std::make_unique<HGCalTriggerCellCalibration>(conf);
 }
 
 void
