@@ -13,7 +13,8 @@ from L1Trigger.L1THGCal.hgcalBackEndLayer2Producer_cfi import distance_C3d_param
                                                               dr_layerbylayer, \
                                                               dr_layerbylayer_Bcoefficient, \
                                                               neighbour_weights_1stOrder, \
-                                                              neighbour_weights_2ndOrder
+                                                              neighbour_weights_2ndOrder, \
+                                                              MAX_LAYERS
 
 
 def set_threshold_params(pset, seed_threshold, cluster_threshold):
@@ -183,22 +184,22 @@ def custom_3dclustering_clusteringRadiusLayerbyLayerFixedEta(process,
                                                              distance_coefficientA=dr_layerbylayer):
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
     parameters_c3d.dR_multicluster_byLayer_coefficientA = distance_coefficientA
-    parameters_c3d.dR_multicluster_byLayer_coefficientB = cms.vdouble([0]*53)
+    parameters_c3d.dR_multicluster_byLayer_coefficientB = cms.vdouble( [0]*(MAX_LAYERS+1) )
     return process
 
 def custom_3dclustering_clusteringRadiusNoLayerDependenceFixedEta(process,
                                                                   distance_coefficientA=0.03):
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-    parameters_c3d.dR_multicluster_byLayer_coefficientA = cms.vdouble( [distance_coefficientA]*53 )
-    parameters_c3d.dR_multicluster_byLayer_coefficientB = cms.vdouble( [0]*53 )
+    parameters_c3d.dR_multicluster_byLayer_coefficientA = cms.vdouble( [distance_coefficientA]*(MAX_LAYERS+1) )
+    parameters_c3d.dR_multicluster_byLayer_coefficientB = cms.vdouble( [0]*(MAX_LAYERS+1) )
     return process
 
 def custom_3dclustering_clusteringRadiusNoLayerDependenceVariableEta(process,
                                                                      distance_coefficientA=0.03,
                                                                      distance_coefficientB=0.02):
     parameters_c3d = process.hgcalBackEndLayer2Producer.ProcessorParameters.C3d_parameters
-    parameters_c3d.dR_multicluster_byLayer_coefficientA = cms.vdouble( [distance_coefficientA]*53 )
-    parameters_c3d.dR_multicluster_byLayer_coefficientB = cms.vdouble( [distance_coefficientB]*53 )
+    parameters_c3d.dR_multicluster_byLayer_coefficientA = cms.vdouble( [distance_coefficientA]*(MAX_LAYERS+1) )
+    parameters_c3d.dR_multicluster_byLayer_coefficientB = cms.vdouble( [distance_coefficientB]*(MAX_LAYERS+1) )
     return process
 
 
