@@ -19,17 +19,21 @@ binSums = cms.vuint32(13,               # 0
                       3, 3, 3, 3, 3, 3, 3, 3  # 28 - 35
                       )
 
+EE_DR_GROUP = 7
+FH_DR_GROUP = 6
+BH_DR_GROUP = 12
+MAX_LAYERS = 52
 
-dr_layerbylayer = ([0] +  # no layer 0
-                   [0.015]*7 + [0.020]*7 + [0.030]*7 + [0.040]*7 +  # EM
-                   [0.040]*6 + [0.050]*6 +  # FH
-                   [0.050]*12)  # BH
+dr_layerbylayer = ([0] + # no layer 0
+        [0.015]*EE_DR_GROUP + [0.020]*EE_DR_GROUP + [0.030]*EE_DR_GROUP + [0.040]*EE_DR_GROUP + # EM
+        [0.040]*FH_DR_GROUP + [0.050]*FH_DR_GROUP + # FH
+        [0.050]*BH_DR_GROUP) # BH
 
 
-dr_layerbylayer_Bcoefficient = ([0] +  # no layer 0
-                                [0.020]*7 + [0.020]*7 + [0.02]*7 + [0.020]*7 +  # EM
-                                [0.020]*6 + [0.020]*6 +  # FH
-                                [0.020]*12)  # BH
+dr_layerbylayer_Bcoefficient = ([0] + # no layer 0
+        [0.020]*EE_DR_GROUP + [0.020]*EE_DR_GROUP + [0.02]*EE_DR_GROUP + [0.020]*EE_DR_GROUP + # EM
+        [0.020]*FH_DR_GROUP + [0.020]*FH_DR_GROUP + # FH
+        [0.020]*BH_DR_GROUP) # BH
 
 
 neighbour_weights_1stOrder = cms.vdouble(0, 0.25, 0,
