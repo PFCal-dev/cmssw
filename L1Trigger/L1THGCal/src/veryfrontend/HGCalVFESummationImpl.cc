@@ -1,13 +1,11 @@
 #include "L1Trigger/L1THGCal/interface/veryfrontend/HGCalVFESummationImpl.h"
 
-HGCalVFESummationImpl::
-HGCalVFESummationImpl(const edm::ParameterSet& conf):
+HGCalVFESummationImpl::HGCalVFESummationImpl(const edm::ParameterSet& conf):
   thickness_corrections_(conf.getParameter<std::vector<double>>("ThicknessCorrections")),
   LSB_silicon_fC_(conf.getParameter<double>("siliconCellLSB_fC")),
   LSB_scintillator_MIP_(conf.getParameter<double>("scintillatorCellLSB_MIP")),
   thresholds_silicon_(conf.getParameter<std::vector<double>>("thresholdsSilicon")),
-  threshold_scintillator_(conf.getParameter<double>("thresholdScintillator"))
-{
+  threshold_scintillator_(conf.getParameter<double>("thresholdScintillator")) {
   if(thickness_corrections_.size()!=3)
   {
     throw cms::Exception("Configuration") <<
@@ -20,16 +18,13 @@ HGCalVFESummationImpl(const edm::ParameterSet& conf):
   }
 }
 
-void 
-HGCalVFESummationImpl::
-triggerCellSums(const HGCalTriggerGeometryBase& geometry, 
-                const std::vector<std::pair<DetId, uint32_t > >& linearized_dataframes,
-                std::unordered_map<uint32_t, uint32_t>& payload)
-{
-  if(linearized_dataframes.empty()) return;
+void HGCalVFESummationImpl::triggerCellSums(const HGCalTriggerGeometryBase& geometry,
+                                            const std::vector<std::pair<DetId, uint32_t>>& linearized_dataframes,
+                                            std::unordered_map<uint32_t, uint32_t>& payload) {
+  if (linearized_dataframes.empty())
+    return;
   // sum energies in trigger cells
-  for(const auto& frame : linearized_dataframes)
-  {
+  for (const auto& frame : linearized_dataframes) {
     DetId cellid(frame.first);
     uint32_t value = frame.second;
 
@@ -55,11 +50,10 @@ triggerCellSums(const HGCalTriggerGeometryBase& geometry,
     {
       int thickness = triggerTools_.thicknessIndex(cellid);
       double thickness_correction = thickness_corrections_.at(thickness);
-      value = (double)value*thickness_correction;
+      value = (double)value * thickness_correction;
     }
 
     // sums energy for the same trigger cell id
-    payload[tcid] += value; // 32 bits integer should be largely enough 
+    payload[tcid] += value;  // 32 bits integer should be largely enough
   }
-
 }
