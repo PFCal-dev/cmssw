@@ -20,6 +20,7 @@
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerGeometryBase.h"
 #include "L1Trigger/L1THGCal/interface/backend/HGCalShowerShape.h"
 #include "L1Trigger/L1THGCal/interface/backend/HGCalClusteringDummyImpl.h"
+#include "L1Trigger/L1THGCal/interface/HGCalTriggerTools.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "Geometry/HcalCommonData/interface/HcalDDDRecConstants.h"
 #include "Geometry/HcalCommonData/interface/HcalHitRelabeller.h"
@@ -34,9 +35,8 @@ public:
 
 private:
   void produce(edm::Event&, edm::EventSetup const&) override;
-  void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
-  std::unordered_map<uint32_t, double> makeHitMap(edm::Event const&, edm::EventSetup const&) const;
+  std::unordered_map<uint32_t, double> makeHitMap(edm::Event const&, edm::EventSetup const&, HGCalTriggerGeometryBase const&) const;
 
   typedef edm::AssociationMap<edm::OneToMany<CaloParticleCollection, l1t::HGCalTriggerCellBxCollection>> CaloToCellsMap;
 
@@ -50,9 +50,7 @@ private:
   HGCalClusteringDummyImpl dummyClustering_;
   HGCalShowerShape showerShape_;
 
-  // for input with old (<= V8) geometry, sim and reco hits use different ID schemes
-  // automatically detected in beginLuminosityBlock through the geometry object
-  bool simHitsUseRecoDetIds_{true};
+  HGCalTriggerTools triggerTools_;
 };
 
 CaloTruthCellsProducer::CaloTruthCellsProducer(edm::ParameterSet const& config) :
@@ -88,6 +86,7 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
 
   dummyClustering_.eventSetup(setup);
   showerShape_.eventSetup(setup);
+  triggerTools_.eventSetup(setup);
 
   edm::ESHandle<HGCalTriggerGeometryBase> geometryHandle;
   setup.get<CaloGeometryRecord>().get(geometryHandle);
@@ -95,10 +94,10 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
 
   std::unordered_map<uint32_t, CaloParticleRef> tcToCalo;
 
-  std::unordered_map<uint32_t, double> hitToEnergy(makeHitMap(event, setup)); // cellId -> sim energy
+  std::unordered_map<uint32_t, double> hitToEnergy(makeHitMap(event, setup, geometry)); // cellId -> sim energy
   std::unordered_map<uint32_t, std::pair<double, double>> tcToEnergies; // tcId -> {total sim energy, fractioned sim energy}
 
-  for (auto& he : hitToEnergy) {
+  for (auto const& he : hitToEnergy) {
     DetId hitId(he.first);
     uint32_t tcId;
     try {
@@ -142,14 +141,13 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
 
     // ordered by the gen particle index
     int genIndex(caloParticle.g4Tracks().at(0).genpartIndex() - 1);
-    if (genIndex >= 0) // < 0 shouldn't happen
-      orderedCaloRefs[genIndex] = ref;
+    orderedCaloRefs[genIndex] = ref;
   }
 
   auto outMap(std::make_unique<CaloToCellsMap>(caloParticlesHandle, triggerCellsHandle));
   std::unique_ptr<l1t::HGCalTriggerCellBxCollection> outCollection;
   if (makeCellsCollection_)
-    outCollection = std::move(std::make_unique<l1t::HGCalTriggerCellBxCollection>());
+    outCollection = std::make_unique<l1t::HGCalTriggerCellBxCollection>();
 
   typedef edm::Ptr<l1t::HGCalTriggerCell> TriggerCellPtr;
   typedef edm::Ptr<l1t::HGCalCluster> ClusterPtr;
@@ -159,7 +157,7 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
 
   // loop through all bunch crossings
   for (int bx(triggerCells.getFirstBX()); bx <= triggerCells.getLastBX(); ++bx) {
-    for (auto&& cItr(triggerCells.begin(bx)); cItr != triggerCells.end(bx); ++cItr) {
+    for (auto cItr(triggerCells.begin(bx)); cItr != triggerCells.end(bx); ++cItr) {
       auto const& cell(*cItr);
 
       auto mapElem(tcToCalo.find(cell.detId()));
@@ -169,10 +167,15 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
       outMap->insert(mapElem->second, edm::Ref<l1t::HGCalTriggerCellBxCollection>(triggerCellsHandle, triggerCells.key(cItr)));
 
       if (makeCellsCollection_) {
-        auto& simEnergies(tcToEnergies.at(cell.detId()));
+        auto const& simEnergies(tcToEnergies.at(cell.detId()));
         if (simEnergies.first > 0.) {
+          double eFraction(simEnergies.second / simEnergies.first);
+
           outCollection->push_back(bx, cell);
-          (*outCollection)[outCollection->size() - 1].setMipPt(cell.mipPt() * simEnergies.second / simEnergies.first);
+          auto& newCell((*outCollection)[outCollection->size() - 1]);
+
+          newCell.setMipPt(cell.mipPt() * eFraction);
+          newCell.setP4(cell.p4() * eFraction);
         }
       }
 
@@ -201,7 +204,7 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
     caloToClusterIndices[caloRef.key()].push_back(iC);
   }
 
-  auto&& clustersHandle(event.put(std::move(outClusters)));
+  auto clustersHandle(event.put(std::move(outClusters)));
 
   auto outMulticlusters(std::make_unique<l1t::HGCalMulticlusterBxCollection>());
 
@@ -223,7 +226,7 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
     // Set the gen particle index as the DetId
     multicluster.setDetId(caloParticle.g4Tracks().at(0).genpartIndex() - 1);
 
-    auto&& centre(multicluster.centre());
+    auto& centre(multicluster.centre());
     math::PtEtaPhiMLorentzVector multiclusterP4(multicluster.sumPt(), centre.eta(), centre.phi(), 0.);
     multicluster.setP4(multiclusterP4);
 
@@ -240,109 +243,113 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
   event.put(std::move(outMulticlusters));
 }
 
-void
-CaloTruthCellsProducer::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const& setup)
-{
-  // check geometry version
-
-  edm::ESHandle<CaloGeometry> geom;
-  setup.get<CaloGeometryRecord>().get(geom);
-  auto const* eegeom(geom->getSubdetectorGeometry(DetId::HGCalEE, ForwardSubdetector::ForwardEmpty));
-
-  if (eegeom)
-    simHitsUseRecoDetIds_ = true; // >= V9 geometry
-  else
-    simHitsUseRecoDetIds_ = false; // <= V8 geometry
-}
-
 std::unordered_map<uint32_t, double>
-CaloTruthCellsProducer::makeHitMap(edm::Event const& event, edm::EventSetup const& setup) const
+CaloTruthCellsProducer::makeHitMap(edm::Event const& event, edm::EventSetup const& setup, HGCalTriggerGeometryBase const& geometry) const
 {
   std::unordered_map<uint32_t, double> hitMap; // cellId -> sim energy
 
-  if (simHitsUseRecoDetIds_) {
-    edm::ESHandle<HGCalTriggerGeometryBase> geometry;
-    setup.get<CaloGeometryRecord>().get(geometry);
+  typedef std::function<DetId(DetId const&)> DetIdMapper;
+  typedef std::pair<edm::EDGetTokenT<std::vector<PCaloHit>> const*, DetIdMapper> SimHitSpec;
 
-    for (auto* token : {&simHitsTokenEE_, &simHitsTokenHEfront_, &simHitsTokenHEback_}) {
-      edm::Handle<std::vector<PCaloHit>> handle;
-      event.getByToken(*token, handle);
-      auto const& simhits(*handle);
+  SimHitSpec specs[3] = {
+    {&simHitsTokenEE_, [this, &geometry](DetId const& simId)->DetId { return this->triggerTools_.simToReco(simId, geometry.eeTopology()); }},
+    {&simHitsTokenHEfront_, [this, &geometry](DetId const& simId)->DetId { return this->triggerTools_.simToReco(simId, geometry.fhTopology()); }},
+    {&simHitsTokenHEback_, nullptr}
+  };
+  if (geometry.isV9Geometry())
+    specs[2].second = [this, &geometry](DetId const& simId)->DetId { return this->triggerTools_.simToReco(simId, geometry.hscTopology()); };
+  else
+    specs[2].second = [this, &geometry](DetId const& simId)->DetId { return this->triggerTools_.simToReco(simId, geometry.bhTopology()); };
 
-      for (auto const& simhit : simhits)
-        hitMap.emplace(simhit.id(), simhit.energy());
-    }
+  for (auto const& tt : specs) {
+    edm::Handle<std::vector<PCaloHit>> handle;
+    event.getByToken(*tt.first, handle);
+    auto const& simhits(*handle);
+
+    for (auto const& simhit : simhits)
+      hitMap.emplace(tt.second(simhit.id()), simhit.energy());
   }
-  else {
-    // Conversion code from SimGeneral/CaloAnalysis/plugins/CaloTruthAccumulator.cc
 
-    edm::ESHandle<CaloGeometry> calogeom;
-    setup.get<CaloGeometryRecord>().get(calogeom);
+  // if (simHitsUseRecoDetIds_) {
+  //   for (auto* token : {&simHitsTokenEE_, &simHitsTokenHEfront_, &simHitsTokenHEback_}) {
+  //     edm::Handle<std::vector<PCaloHit>> handle;
+  //     event.getByToken(*token, handle);
+  //     auto const& simhits(*handle);
 
-    auto const* bhgeom(static_cast<HcalGeometry const*>(calogeom->getSubdetectorGeometry(DetId::Hcal, HcalEndcap)));
-    HcalDDDRecConstants const* hcddd(bhgeom->topology().dddConstants());
+  //     for (auto const& simhit : simhits)
+  //       hitMap.emplace(simhit.id(), simhit.energy());
+  //   }
+  // }
+  // else {
+  //   // Conversion code from SimGeneral/CaloAnalysis/plugins/CaloTruthAccumulator.cc
 
-    auto const* eegeom(static_cast<HGCalGeometry const*>(calogeom->getSubdetectorGeometry(DetId::Forward, HGCEE)));
-    HGCalDDDConstants const* hgeddd(&eegeom->topology().dddConstants());
+  //   edm::ESHandle<CaloGeometry> calogeom;
+  //   setup.get<CaloGeometryRecord>().get(calogeom);
 
-    auto const* fhgeom(static_cast<HGCalGeometry const*>(calogeom->getSubdetectorGeometry(DetId::Forward, HGCHEF)));
-    HGCalDDDConstants const* hghddd(&fhgeom->topology().dddConstants());
+  //   auto const* bhgeom(static_cast<HcalGeometry const*>(calogeom->getSubdetectorGeometry(DetId::Hcal, HcalEndcap)));
+  //   HcalDDDRecConstants const* hcddd(bhgeom->topology().dddConstants());
 
-    for (auto* token : {&simHitsTokenEE_, &simHitsTokenHEfront_}) {
-      edm::Handle<std::vector<PCaloHit>> handle;
-      event.getByToken(*token, handle);
-      auto const& simhits(*handle);
+  //   auto const* eegeom(static_cast<HGCalGeometry const*>(calogeom->getSubdetectorGeometry(DetId::Forward, HGCEE)));
+  //   HGCalDDDConstants const* hgeddd(&eegeom->topology().dddConstants());
 
-      for (auto const& simhit : simhits) {
-        // skip simhits with bad barcodes
-        if (simhit.geantTrackId() == 0)
-          continue;
+  //   auto const* fhgeom(static_cast<HGCalGeometry const*>(calogeom->getSubdetectorGeometry(DetId::Forward, HGCHEF)));
+  //   HGCalDDDConstants const* hghddd(&fhgeom->topology().dddConstants());
 
-        int subdet, layer, cell, sec, subsec, zp;
-        HGCalTestNumbering::unpackHexagonIndex(simhit.id(), subdet, zp, layer, sec, subsec, cell);
+  //   for (auto* token : {&simHitsTokenEE_, &simHitsTokenHEfront_}) {
+  //     edm::Handle<std::vector<PCaloHit>> handle;
+  //     event.getByToken(*token, handle);
+  //     auto const& simhits(*handle);
 
-        HGCalDDDConstants const* ddd{nullptr};
-        switch (subdet) {
-        case HGCEE:
-          ddd = hgeddd;
-          break;
-        case HGCHEF:
-          ddd = hghddd;
-          break;
-        default:
-          throw cms::Exception("LogicError")
-            << "Invalid unpacked hexagon index: subdet = " << subdet;
-        }
+  //     for (auto const& simhit : simhits) {
+  //       // skip simhits with bad barcodes
+  //       if (simhit.geantTrackId() == 0)
+  //         continue;
 
-        // last argument is topology->detectorType() which is identically false
-        std::pair<int, int> recoLayerCell(ddd->simToReco(cell, layer, sec, false));
-        cell = recoLayerCell.first;
-        layer = recoLayerCell.second;
-        // skip simhits with non-existant layers
-        if (layer == -1)
-          continue;
+  //       int subdet, layer, cell, sec, subsec, zp;
+  //       HGCalTestNumbering::unpackHexagonIndex(simhit.id(), subdet, zp, layer, sec, subsec, cell);
 
-        uint32_t hitId(HGCalDetId(ForwardSubdetector(subdet), zp, layer, subsec, sec, cell).rawId());
+  //       HGCalDDDConstants const* ddd{nullptr};
+  //       switch (subdet) {
+  //       case HGCEE:
+  //         ddd = hgeddd;
+  //         break;
+  //       case HGCHEF:
+  //         ddd = hghddd;
+  //         break;
+  //       default:
+  //         throw cms::Exception("LogicError")
+  //           << "Invalid unpacked hexagon index: subdet = " << subdet;
+  //       }
 
-        hitMap.emplace(hitId, simhit.energy());
-      }
-    }
+  //       // last argument is topology->detectorType() which is identically false
+  //       std::pair<int, int> recoLayerCell(ddd->simToReco(cell, layer, sec, false));
+  //       cell = recoLayerCell.first;
+  //       layer = recoLayerCell.second;
+  //       // skip simhits with non-existant layers
+  //       if (layer == -1)
+  //         continue;
 
-    {
-      edm::Handle<std::vector<PCaloHit>> handle;
-      event.getByToken(simHitsTokenHEback_, handle);
-      auto const& simhits(*handle);
+  //       uint32_t hitId(HGCalDetId(ForwardSubdetector(subdet), zp, layer, subsec, sec, cell).rawId());
 
-      for (auto const& simhit : simhits) {
-        // Using HCAL DetId
-        HcalDetId hcalId(HcalHitRelabeller::relabel(simhit.id(), hcddd));
-        if (hcalId.subdet() != HcalEndcap)
-          continue;
+  //       hitMap.emplace(hitId, simhit.energy());
+  //     }
+  //   }
+
+  //   {
+  //     edm::Handle<std::vector<PCaloHit>> handle;
+  //     event.getByToken(simHitsTokenHEback_, handle);
+  //     auto const& simhits(*handle);
+
+  //     for (auto const& simhit : simhits) {
+  //       // Using HCAL DetId
+  //       HcalDetId hcalId(HcalHitRelabeller::relabel(simhit.id(), hcddd));
+  //       if (hcalId.subdet() != HcalEndcap)
+  //         continue;
       
-        hitMap.emplace(hcalId.rawId(), simhit.energy());
-      }
-    }
-  }
+  //       hitMap.emplace(hcalId.rawId(), simhit.energy());
+  //     }
+  //   }
+  // }
 
   return hitMap;
 }
