@@ -11,6 +11,8 @@
 #include "TrackPropagation/RungeKutta/interface/defaultRKPropagator.h"
 #include "TrackPropagation/RungeKutta/interface/RKPropagatorInS.h"
 #include "FastSimulation/Event/interface/FSimEvent.h"
+#include "FastSimulation/Particle/interface/ParticleTable.h"
+#include "FastSimulation/CaloGeometryTools/interface/Transform3DPJ.h"
 #include "SimGeneral/HepPDTRecord/interface/PDTRecord.h"
 
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -121,6 +123,9 @@ public:
 
   void initialize(TTree &, const edm::ParameterSet &, edm::ConsumesCollector &&) final;
   void fill(const edm::Event &, const edm::EventSetup &) final;
+
+  typedef ROOT::Math::Transform3DPJ Transform3D;
+  typedef ROOT::Math::Transform3DPJ::Point Point;
 
   enum ReachHGCal { notReach = 0, outsideEESurface = 1, onEESurface = 2 };
 
@@ -273,6 +278,7 @@ void HGCalTriggerNtupleGen::fill(const edm::Event &iEvent, const edm::EventSetup
   triggerTools_.eventSetup(es);
 
   // This balck magic is needed to use the mySimEvent_
+  ParticleTable::Sentry ptable(mySimEvent_->theTable());
   edm::Handle<edm::HepMCProduct> hevH;
   edm::Handle<std::vector<SimTrack>> simTracksHandle;
   edm::Handle<std::vector<SimVertex>> simVerticesHandle;
@@ -287,6 +293,7 @@ void HGCalTriggerNtupleGen::fill(const edm::Event &iEvent, const edm::EventSetup
   vtx_x_ = primaryVertex->position().x() * mm2cm;  // to put in official units
   vtx_y_ = primaryVertex->position().y() * mm2cm;
   vtx_z_ = primaryVertex->position().z() * mm2cm;
+  Point sim_pv(vtx_x_, vtx_y_, vtx_z_);
 
   HGCal_helpers::SimpleTrackPropagator toHGCalPropagator(aField_);
   toHGCalPropagator.setPropagationTargetZ(triggerTools_.getLayerZ(1));
