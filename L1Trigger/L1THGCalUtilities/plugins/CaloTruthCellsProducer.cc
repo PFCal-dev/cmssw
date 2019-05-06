@@ -22,9 +22,6 @@
 #include "L1Trigger/L1THGCal/interface/backend/HGCalClusteringDummyImpl.h"
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerTools.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
-#include "Geometry/HcalCommonData/interface/HcalDDDRecConstants.h"
-#include "Geometry/HcalCommonData/interface/HcalHitRelabeller.h"
-#include "SimDataFormats/CaloTest/interface/HGCalTestNumbering.h"
 
 class CaloTruthCellsProducer : public edm::stream::EDProducer<> {
 public:
@@ -226,7 +223,7 @@ CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup)
     // Set the gen particle index as the DetId
     multicluster.setDetId(caloParticle.g4Tracks().at(0).genpartIndex() - 1);
 
-    auto& centre(multicluster.centre());
+    auto const& centre(multicluster.centre());
     math::PtEtaPhiMLorentzVector multiclusterP4(multicluster.sumPt(), centre.eta(), centre.phi(), 0.);
     multicluster.setP4(multiclusterP4);
 
