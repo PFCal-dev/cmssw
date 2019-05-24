@@ -20,6 +20,7 @@
 
 #include <TH1F.h>
 #include <TH2F.h>
+#include <TProfile.h>
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/PluginManager/interface/ModuleDef.h"
@@ -45,17 +46,18 @@ public:
 
   explicit HGCSiNoiseMapAnalyzer(const edm::ParameterSet&);
   ~HGCSiNoiseMapAnalyzer() override;
-  
+
 private:
   void beginJob() override {}
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void endJob() override {}
-  
+
   // ----------member data ---------------------------
   edm::Service<TFileService> fs_;
   std::map<DetId::Detector, HGCalSiNoiseMap *> noiseMaps_;
   std::map< std::pair<DetId::Detector,int>, TH1F *> layerN_, layerCCE_, layerNoise_, layerIleak_, layerSN_, layerF_;
   std::map< DetId::Detector, TH2F *> detN_, detCCE_, detNoise_, detIleak_, detSN_, detF_;
+  std::map< std::pair<DetId::Detector,HGCSiliconDetId::waferType>, TProfile *> detCCEVsFluence_;
   std::map<HGCSiliconDetId::waferType,double> signalfC_;
 };
 
@@ -107,7 +109,7 @@ void HGCSiNoiseMapAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
 
     //start histos
     TString baseName(Form("d%d_",d));
-    TString title(d==DetId::HGCalEE ? "CEE" : "CEH_{Si}");    
+    TString title(d==DetId::HGCalEE ? "CEE" : "CEH_{Si}");
     Int_t nbinsR(100);
     for(unsigned int ilay=0; ilay<nlay; ilay++) {
 
@@ -118,12 +120,20 @@ void HGCSiNoiseMapAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       TString layerTitle(Form("%s %d",title.Data(),layer));
       layerTitle+= ";Radius [cm];";
       layerN_[key]     = fs_->make<TH1F>(layerBaseName+"ncells",  layerTitle+"Cells",               nbinsR, ranR.first, ranR.second);
-      layerCCE_[key]   = fs_->make<TH1F>(layerBaseName+"cce",     layerTitle+"<CCE>",               nbinsR, ranR.first, ranR.second);                     
+      layerCCE_[key]   = fs_->make<TH1F>(layerBaseName+"cce",     layerTitle+"<CCE>",               nbinsR, ranR.first, ranR.second);
       layerNoise_[key] = fs_->make<TH1F>(layerBaseName+"noise",   layerTitle+"<Noise> [fC]",        nbinsR, ranR.first, ranR.second);
       layerIleak_[key] = fs_->make<TH1F>(layerBaseName+"ileak",   layerTitle+"<I_{leak}> [#muA]",   nbinsR, ranR.first, ranR.second);
       layerSN_[key]    = fs_->make<TH1F>(layerBaseName+"sn",      layerTitle+"<S/N>",               nbinsR, ranR.first, ranR.second);
       layerF_[key]     = fs_->make<TH1F>(layerBaseName+"fluence", layerTitle+"<F> [n_{eq}/cm^{2}]", nbinsR, ranR.first, ranR.second);
     }
+
+    //cce vs fluence
+    for(auto &wt:signalfC_)
+    {
+      std::pair<DetId::Detector,HGCSiliconDetId::waferType> key2(d,wt.first);
+      detCCEVsFluence_[key2] = fs_->make<TProfile>(baseName+Form("wt%d_",wt.first)+"cceVsFluence",  title+";<F> [n_{eq}/cm^{2}];<CCE>", 1000, 1e14, 1e16);
+    }
+
 
     //sub-detector histos
     title+=";Layer;Radius [cm];";
@@ -133,7 +143,8 @@ void HGCSiNoiseMapAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
     detIleak_[d] = fs_->make<TH2F>(baseName+"ileak",   title+"<I_{leak}> [#muA]",   nlay,1,nlay+1, nbinsR,ranR.first,ranR.second);
     detSN_[d]    = fs_->make<TH2F>(baseName+"sn",      title+"<S/N>",               nlay,1,nlay+1, nbinsR,ranR.first,ranR.second);
     detF_[d]     = fs_->make<TH2F>(baseName+"fluence", title+"<F> [n_{eq}/cm^{2}]", nlay,1,nlay+1, nbinsR,ranR.first,ranR.second);
-                    
+
+
     //fill histos
     for(const auto &cellId : detIdVec)
       {
@@ -141,7 +152,7 @@ void HGCSiNoiseMapAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
         int layer = std::abs(id.layer());
         GlobalPoint pt = noiseMaps_[d]->geom()->getPosition(id);
         double r(pt.perp());
-        
+
         HGCalSiNoiseMap::SiCellOpCharacteristics siop=noiseMaps_[d]->getSiCellOpCharacteristics(HGCalSiNoiseMap::q80fC,id,r);
 
         double S(signalfC_[HGCSiliconDetId::waferType(id.type())]);
@@ -149,20 +160,23 @@ void HGCSiNoiseMapAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
         detN_[d]->Fill(layer,r,1);
         detCCE_[d]->Fill(layer,r,siop.cce);
         detNoise_[d]->Fill(layer,r,siop.noise);
-        detSN_[d]->Fill(layer,r,S/siop.noise);
+        detSN_[d]->Fill(layer,r,S*siop.cce/siop.noise);
         detIleak_[d]->Fill(layer,r,siop.ileak);
-        float fluence=exp(siop.lnfluence);
+        float fluence=siop.fluence;
         detF_[d]->Fill(layer,r,fluence);
 
         std::pair<DetId::Detector,int> key(d,layer);
-        layerN_[key]->Fill(r,1);        
+        layerN_[key]->Fill(r,1);
         layerCCE_[key]->Fill(r,siop.cce);
         layerNoise_[key]->Fill(r,siop.noise);
-        layerSN_[key]->Fill(r,S/siop.noise);
+        layerSN_[key]->Fill(r,S*siop.cce/siop.noise);
         layerIleak_[key]->Fill(r,siop.ileak);
         layerF_[key]->Fill(r,fluence);
-      }    
-  
+
+        std::pair<DetId::Detector,HGCSiliconDetId::waferType> key2(d,HGCSiliconDetId::waferType(id.type()));
+        detCCEVsFluence_[key2]->Fill(fluence,siop.cce);
+      }
+
     //normalize histos per cell counts
     detF_[d]->Divide(detN_[d]);
     detCCE_[d]->Divide(detN_[d]);
@@ -179,7 +193,7 @@ void HGCSiNoiseMapAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       layerIleak_[key]->Divide(layerN_[key]);
     }
   }
-  
+
 
 
 }

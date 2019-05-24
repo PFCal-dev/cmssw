@@ -27,7 +27,7 @@ double HGCalRadiationMap::getDoseValue(const int subdet,const int layer, const s
 {
   std::pair<int,int> key(subdet,layer);
   double cellDoseLog10 = doseMap_[key].a_ + doseMap_[key].b_*radius[4] + doseMap_[key].c_*radius[5] + doseMap_[key].d_*radius[6] + doseMap_[key].e_*radius[7];
-  return logVal ? cellDoseLog10*log(10.)+log(grayToKrad_) : pow(10,cellDoseLog10) * grayToKrad_;
+  return logVal ? cellDoseLog10*log(10.)+log(grayToKrad_) : std::pow(10,cellDoseLog10) * grayToKrad_;
 }
 
 //
