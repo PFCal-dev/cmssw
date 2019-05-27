@@ -19,9 +19,9 @@ HGCalSiNoiseMap::HGCalSiNoiseMap() :
   cellVolume_[HGCSiliconDetId::waferType::HGCalCoarseThin]=1.18*(200.e-4);
   cellVolume_[HGCSiliconDetId::waferType::HGCalCoarseThick]=1.18*(300.e-4);
 
-  cceParam_[HGCSiliconDetId::waferType::HGCalFine]={6e+15, -8.73841e-17, -2.27227e-17};
-  cceParam_[HGCSiliconDetId::waferType::HGCalCoarseThin]={1.5e+15, -3.29653e-16, -8.17497e-17};
-  cceParam_[HGCSiliconDetId::waferType::HGCalCoarseThick]={4e+14, -8.31403e-16, -4.97935e-16};
+  cceParam_[HGCSiliconDetId::waferType::HGCalFine]={1.5e+15, 6e+15, 1.33333e-17, -1.16778e-16, -2.58303e-17};          //120
+  cceParam_[HGCSiliconDetId::waferType::HGCalCoarseThin]={2e+15, 1e+17, -2.32205e-16, -5.7526e-17, -3.95409e-08};      //200
+  cceParam_[HGCSiliconDetId::waferType::HGCalCoarseThick]={2.1e+14, 7.5e+14, -4.80627e-16, -1.00942e-15, -3.01253e-17};//300
 }
 
 //
@@ -45,7 +45,10 @@ HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteris
   //leakage current [muA]
   siop.ileak=exp(ileakParam_[0]*siop.lnfluence+ileakParam_[1])*cellVol*1e6;
 
-  siop.cce=siop.fluence<cceParam_[cellThick][0] ? 1+cceParam_[cellThick][1]*siop.fluence : cceParam_[cellThick][2]*siop.fluence+(cceParam_[cellThick][1]-cceParam_[cellThick][2])*cceParam_[cellThick][0]+1;
+  siop.cce=siop.fluence<=cceParam_[cellThick][0] ? 1+cceParam_[cellThick][2]*siop.fluence :
+           siop.fluence>cceParam_[cellThick][0] && siop.fluence<=cceParam_[cellThick][1] ? cceParam_[cellThick][3]*siop.fluence+(cceParam_[cellThick][2]-cceParam_[cellThick][3])*cceParam_[cellThick][0]+1 :
+           cceParam_[cellThick][4]*siop.fluence+(cceParam_[cellThick][3]-cceParam_[cellThick][4])*cceParam_[cellThick][1]+(cceParam_[cellThick][2]-cceParam_[cellThick][3])*cceParam_[cellThick][0]+1;
+
 
   //build noise estimate
   double enc_p(encpScale_*sqrt(siop.ileak));
