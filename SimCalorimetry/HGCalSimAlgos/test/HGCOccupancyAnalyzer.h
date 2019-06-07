@@ -88,6 +88,9 @@ class HGCOccupancyAnalyzer : public edm::EDAnalyzer
 
   //LSBs and TDC onset
   double adcLSB_,tdcLSB_,tdcOnset_;
+
+  std::map<std::pair<int,int>, std::vector<TH1F *> > hottestWaferH_;
+
 };
  
 

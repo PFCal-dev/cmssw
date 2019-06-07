@@ -9,6 +9,8 @@ nonAgedNoises_v9 = [2000.0,2400.0,2000.0] # 120,200,300 um (in electrons)
 thresholdTracksMIP = False
 
 HGCAL_noise_fC = cms.PSet(
+    scaleByDose = cms.bool(False),
+    doseMap = cms.string(""),
     values = cms.vdouble( [x*fC_per_ele for x in nonAgedNoises] ), #100,200,300 um
     )
 

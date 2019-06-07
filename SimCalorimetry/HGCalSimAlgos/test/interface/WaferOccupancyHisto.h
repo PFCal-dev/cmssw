@@ -8,6 +8,7 @@
 #include "TString.h"
 #include "TMath.h"
 
+#include <exception>
 #include <iostream>
 #include <algorithm>
 
@@ -26,6 +27,7 @@ public:
   */
   WaferOccupancyHisto(int subdet, int layer,int u,int v,int ncells,edm::Service<TFileService> *fs) : ncells_(ncells), nEvents_(0)
     { 
+      myUV_=UVKey_t(u,v);
       addWaferEquivalent(u,v);
 
       TString id(Form("sd%d_lay%d_%d_%d",subdet,layer,u,v));
@@ -36,11 +38,6 @@ public:
       countH_->Sumw2();
       maxCountH_ = subDir.make<TH1F>(id+"_maxcounts",";Counts above threshold;",ncells,0,ncells);
       maxCountH_->Sumw2();
-      maxNeighborCountH_.resize(6);
-      for(size_t i=0; i<6; i++){
-        maxNeighborCountH_[i] = subDir.make<TH1F>(id+Form("_maxcounts%d",int(i)),";Counts above threshold;",ncells,0,ncells);
-        maxNeighborCountH_[i]->Sumw2();
-      }
     }
   
   /**
@@ -69,26 +66,19 @@ public:
   {
     nEvents_++;
     
-    int maxCounts(0);
+    int maxCounts(-1);
     hotWaferKey_=UVKey_t(0,0);
     for(std::map<UVKey_t,int>::iterator it = countMap_.begin();
         it != countMap_.end();
         it++) {
-      
-      countH_->Fill( it->second );
-      int nBelowThr(ncells_-it->second);
-      countH_->Fill(0.,nBelowThr);     
-      adcH_->Fill(0.,nBelowThr);
-
-      if(it->second>maxCounts){
-        maxCounts=it->second;
-        hotWaferKey_=it->first;
-      }      
+      countH_->Fill( it->second );      
+      if(it->second<maxCounts) continue;
+      std::cout << it->second << " " << maxCounts << std::endl;
+      hotWaferKey_=it->first;
+      maxCounts=it->second;
     }
-
+    std::cout << "\t" << hotWaferKey_.first << "  " << hotWaferKey_.second << " " << maxCounts << std::endl;
     maxCountH_->Fill(maxCounts);
-    int nBelowThr(ncells_-maxCounts);
-    maxCountH_->Fill(0.,nBelowThr);
   }
 
   /**
@@ -101,41 +91,41 @@ public:
         it++) {
       countMap_[it->first]=0;
     }
-    countHotSpotVec_.clear();
   }
 
   /**
-     @short counts wafer data in nearest neighbors of the hotest wafer
+     @short return true if UV is a neighboring cell
    */
-  inline void countHotWaferNeighbor(const std::map<UVKey_t,int> &otherCountMap)
+  inline bool isNeighbor(UVKey_t waferKey)
   {
-    for(std::map<UVKey_t,int>::const_iterator it = otherCountMap.begin();
-        it != otherCountMap.end();
-        it++) {
-
-      if(it->first==hotWaferKey_) continue;
-      int deltau(it->first.first-hotWaferKey_.first);
-      int deltav(it->first.second-hotWaferKey_.second);
-      bool isNeighbor( (deltau==1 && deltav==1) || (deltau==0 && deltav==1) || (deltau==-1 && deltav==0)
-                       || (deltau==-1 && deltav==-1) || (deltau==0 && deltav==-1) || (deltau==1 && deltav==0) );
-      if(!isNeighbor) continue;
-
-      countHotSpotVec_.push_back( it->second );
-    }
+    int deltau(waferKey.first-myUV_.first);
+    int deltav(waferKey.second-myUV_.second);
+    return isNeighbor(deltau,deltav);
   }
+
+  inline bool isNeighbor(int deltau,int deltav) 
+  {
+    return ( (deltau==1 && deltav==1) || (deltau==0 && deltav==1) || (deltau==-1 && deltav==0)
+             || (deltau==-1 && deltav==-1) || (deltau==0 && deltav==-1) || (deltau==1 && deltav==0) );
+  }  
 
   /**
-     @short fills the hot spot neighbor counting histograms
-   */
-  inline void fillHotSpotNeighborCounts() 
-  {
-    std::sort(countHotSpotVec_.begin(),countHotSpotVec_.end(),std::greater<int>());
-    for(size_t i=0; i<maxNeighborCountH_.size(); i++){
-      float counts(countHotSpotVec_.size()>i ? countHotSpotVec_[i] : -1.);
-      maxNeighborCountH_[i]->Fill(counts);
+     @short returns neighboring counts if found, otherwise -1 is returned
+  */
+  inline int getNeighborCounts(UVKey_t waferKey) {
+    int counts(-1);
+    for(std::map<UVKey_t,int>::iterator it=countMap_.begin();
+        it!=countMap_.end();
+        it++){
+      int deltau(it->first.first-waferKey.first);
+      int deltav(it->first.second-waferKey.second);
+      if(!isNeighbor(deltau,deltav)) continue;
+      counts=it->second;
     }
+    return counts;
   }
-  
+
+
 
   /**
      @short normalize according to the number of events analyzed and number of equivalent wafers
@@ -155,7 +145,6 @@ public:
     //scale only by the number of events
     norm=float(2*nEvents_);
     maxCountH_->Scale(1./norm);
-    for(auto h : maxNeighborCountH_) h->Scale(1./norm);
   }
 
   /**
@@ -172,6 +161,20 @@ public:
   inline const std::map<UVKey_t,int> &getCountMap() { return countMap_; }
 
   /**
+     @short returns hot wafer key data
+   */
+  inline const UVKey_t getHotWaferUV() { return hotWaferKey_; }
+  inline const int getHotWaferCounts() { return countMap_[hotWaferKey_]; }
+
+  /**
+     @short returns cell data
+   */
+  inline const UVKey_t getWaferEquivalentUV() { return myUV_; }
+  inline const int getWaferEquivalentCounts() { return countMap_[myUV_]; }
+
+  inline int getCells() { return ncells_; }
+
+  /**
      @short DTOR
    */
   ~WaferOccupancyHisto() {}
@@ -180,12 +183,10 @@ public:
  private:
   int ncells_;
   TH1F *adcH_,*countH_,*maxCountH_;
-  std::vector<TH1F *> maxNeighborCountH_;
 
   int nEvents_;
   std::map<UVKey_t,int> countMap_;
-  UVKey_t hotWaferKey_;
-  std::vector<int> countHotSpotVec_;
+  UVKey_t myUV_,hotWaferKey_;
 };
 
 #endif

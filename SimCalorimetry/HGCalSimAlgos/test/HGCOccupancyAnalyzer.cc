@@ -91,6 +91,15 @@ void HGCOccupancyAnalyzer::prepareAnalysis()
 
       for(int ilay=1; ilay<=nlay; ilay++){
 
+        std::pair<int,int> key(subdet,ilay);
+        std::vector<TH1F *> occHistos;
+        for(int iwaf=0; iwaf<7; iwaf++) {
+          TString name(Form("sd%d_lay%d_hottestwafer%d",subdet,ilay,iwaf));
+          occHistos.push_back( fs->make<TH1F>(name,";Occupancy;",500,0,1) );
+          occHistos[iwaf]->Sumw2();
+        }
+        hottestWaferH_[key]=occHistos;
+            
         for(auto &uv : uvEqSet_){
           int waferU(uv.first),waferV(uv.second);
 
@@ -148,20 +157,57 @@ void HGCOccupancyAnalyzer::analyze( const edm::Event &iEvent, const edm::EventSe
   iEvent.getByToken(digisCEH_,cehDigisHandle);
   analyzeDigis(1,cehDigisHandle);
 
-  //fill main histos and count neighbors around hot spots
+  //fill wafer histos and save the max. found in each layer
+  std::map<std::pair<int,int>,std::pair<WaferOccupancyHisto::UVKey_t, float> > hotWaferOccPerLayer;
   for(auto &it : waferHistos_) {
     it.second->analyze();
 
-    for(auto &jt : waferHistos_) {
-
-      if(std::get<0>(jt.first)!=std::get<0>(it.first)) continue;
-      if(std::get<1>(jt.first)!=std::get<1>(it.first)) continue;
-      if(std::get<2>(jt.first)==std::get<2>(it.first) && std::get<3>(jt.first)!=std::get<3>(it.first)) continue;
-
-      it.second->countHotWaferNeighbor(jt.second->getCountMap());
-    }
-    it.second->fillHotSpotNeighborCounts();
+    WaferOccupancyHisto::UVKey_t hotWaferUV=it.second->getHotWaferUV();
+    float hotWaferOcc=float(it.second->getHotWaferCounts())/float(it.second->getCells());
+    //    cout << it.second->getHotWaferCounts() << " " << it.second->getCells() <<  " " << hotWaferOcc << endl;
+    int sd=std::get<0>(it.first);
+    int lay=std::get<1>(it.first);
+    std::pair<int,int> key(sd,lay);
+   
+    if(hotWaferOccPerLayer.find(key)==hotWaferOccPerLayer.end() || hotWaferOccPerLayer[key].second<hotWaferOcc) 
+      hotWaferOccPerLayer[key]=std::pair<WaferOccupancyHisto::UVKey_t, int>(hotWaferUV,hotWaferOcc);
   }
+    
+  //fill the max. counts per layer and in the neighboring cells
+  for(auto &it : hotWaferOccPerLayer) {
+
+    int sd=it.first.first;
+    int lay=it.first.second;
+    WaferOccupancyHisto::UVKey_t hotWaferUV=it.second.first;
+    if(hotWaferUV.first==0 && hotWaferUV.second==0) continue; //empty layer
+
+    float hotOcc=it.second.second;
+    std::pair<int,int> key(sd,lay);
+    hottestWaferH_[key][0]->Fill(hotOcc);
+
+    //find neighbors
+    std::vector<float> neighborOccs;
+    for(auto &jt : waferHistos_) {
+      int isd=std::get<0>(jt.first);
+      if(isd!=sd) continue;
+      int ilay=std::get<1>(jt.first);
+      if(ilay!=lay) continue;
+      int neighborCts( jt.second->getNeighborCounts(hotWaferUV) );
+      if(neighborCts<0) continue;
+      neighborOccs.push_back( float(neighborCts)/float(jt.second->getCells()) );
+    }
+
+    //sort and fill neighbor histos
+    std::sort(neighborOccs.begin(),neighborOccs.end(),std::greater<int>());
+    for(size_t i=0; i<neighborOccs.size(); i++) {
+      hottestWaferH_[key][i+1]->Fill( neighborOccs[i] );
+    }
+
+    //    cout << sd << " " << lay << " " << hotWaferUV.first << " " << hotWaferUV.second
+    //     << " " << hotOcc << " " << neighborOccs.size() << endl;
+  }
+  
+
  
   //all done, reset counters
   for(auto &it : waferHistos_) it.second->resetCounters();
