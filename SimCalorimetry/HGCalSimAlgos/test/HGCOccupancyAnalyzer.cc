@@ -163,14 +163,13 @@ void HGCOccupancyAnalyzer::analyze( const edm::Event &iEvent, const edm::EventSe
     it.second->analyze();
 
     WaferOccupancyHisto::UVKey_t hotWaferUV=it.second->getHotWaferUV();
-    float hotWaferOcc=float(it.second->getHotWaferCounts())/float(it.second->getCells());
-    //    cout << it.second->getHotWaferCounts() << " " << it.second->getCells() <<  " " << hotWaferOcc << endl;
+    float hotWaferOcc=float(it.second->getHotWaferCounts())/float(it.second->getCells());    
     int sd=std::get<0>(it.first);
     int lay=std::get<1>(it.first);
     std::pair<int,int> key(sd,lay);
    
-    if(hotWaferOccPerLayer.find(key)==hotWaferOccPerLayer.end() || hotWaferOccPerLayer[key].second<hotWaferOcc) 
-      hotWaferOccPerLayer[key]=std::pair<WaferOccupancyHisto::UVKey_t, int>(hotWaferUV,hotWaferOcc);
+    if(hotWaferOccPerLayer.find(key)==hotWaferOccPerLayer.end() || hotWaferOccPerLayer[key].second<hotWaferOcc)       
+      hotWaferOccPerLayer[key]=std::pair<WaferOccupancyHisto::UVKey_t,float>(hotWaferUV,hotWaferOcc);
   }
     
   //fill the max. counts per layer and in the neighboring cells
@@ -194,7 +193,10 @@ void HGCOccupancyAnalyzer::analyze( const edm::Event &iEvent, const edm::EventSe
       if(ilay!=lay) continue;
       int neighborCts( jt.second->getNeighborCounts(hotWaferUV) );
       if(neighborCts<0) continue;
-      neighborOccs.push_back( float(neighborCts)/float(jt.second->getCells()) );
+      float occ=(float)neighborCts;
+      float ncells=(float)jt.second->getCells();
+      occ/=ncells;
+      neighborOccs.push_back(occ);
     }
 
     //sort and fill neighbor histos
@@ -202,9 +204,6 @@ void HGCOccupancyAnalyzer::analyze( const edm::Event &iEvent, const edm::EventSe
     for(size_t i=0; i<neighborOccs.size(); i++) {
       hottestWaferH_[key][i+1]->Fill( neighborOccs[i] );
     }
-
-    //    cout << sd << " " << lay << " " << hotWaferUV.first << " " << hotWaferUV.second
-    //     << " " << hotOcc << " " << neighborOccs.size() << endl;
   }
   
 

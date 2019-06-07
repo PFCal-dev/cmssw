@@ -56,7 +56,8 @@ public:
   {
     adcH_->Fill(adc);
     UVKey_t key(u,v);
-    countMap_[key]+= (adc>=thr*fudgeFactor);
+    if(adc>=thr*fudgeFactor)
+      countMap_[key]=countMap_[key]+1;
   }
 
   /**
@@ -71,13 +72,12 @@ public:
     for(std::map<UVKey_t,int>::iterator it = countMap_.begin();
         it != countMap_.end();
         it++) {
-      countH_->Fill( it->second );      
-      if(it->second<maxCounts) continue;
-      std::cout << it->second << " " << maxCounts << std::endl;
+      int cts(it->second);
+      countH_->Fill(cts);
+      if(cts<maxCounts) continue;
       hotWaferKey_=it->first;
-      maxCounts=it->second;
+      maxCounts=cts;
     }
-    std::cout << "\t" << hotWaferKey_.first << "  " << hotWaferKey_.second << " " << maxCounts << std::endl;
     maxCountH_->Fill(maxCounts);
   }
 
