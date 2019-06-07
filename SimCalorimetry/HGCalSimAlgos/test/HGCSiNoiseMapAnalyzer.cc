@@ -153,7 +153,7 @@ void HGCSiNoiseMapAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
         GlobalPoint pt = noiseMaps_[d]->geom()->getPosition(id);
         double r(pt.perp());
 
-        HGCalSiNoiseMap::SiCellOpCharacteristics siop=noiseMaps_[d]->getSiCellOpCharacteristics(HGCalSiNoiseMap::q80fC,id,r);
+        HGCalSiNoiseMap::SiCellOpCharacteristics siop=noiseMaps_[d]->getSiCellOpCharacteristics(HGCalSiNoiseMap::q80fC,id);
 
         double S(signalfC_[HGCSiliconDetId::waferType(id.type())]);
 

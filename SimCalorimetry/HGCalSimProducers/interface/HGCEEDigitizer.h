@@ -13,7 +13,6 @@ public:
 		    uint32_t digitizationType, CLHEP::HepRandomEngine* engine) override; 
   ~HGCEEDigitizer() override;
 private:
-
 };
 
 #endif 

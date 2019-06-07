@@ -25,7 +25,11 @@ HGCalSiNoiseMap::HGCalSiNoiseMap() :
 }
 
 //
-HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteristics(SignalRange_t srange,const HGCSiliconDetId &cellId,double &radius) {
+HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteristics(SignalRange_t srange,const HGCSiliconDetId &cellId) {
+
+  //compute the radius here
+  GlobalPoint pt(geom()->getPosition(cellId));
+  double radius(pt.perp());
 
   SiCellOpCharacteristics siop;
 

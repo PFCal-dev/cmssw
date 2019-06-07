@@ -28,7 +28,7 @@ class HGCalSiNoiseMap : public HGCalRadiationMap {
   /**
      @short returns the charge collection efficiency and noise
   */
-  SiCellOpCharacteristics getSiCellOpCharacteristics(SignalRange_t srange,const HGCSiliconDetId &did,double &radius);
+  SiCellOpCharacteristics getSiCellOpCharacteristics(SignalRange_t srange,const HGCSiliconDetId &did);
 
  private:
 
