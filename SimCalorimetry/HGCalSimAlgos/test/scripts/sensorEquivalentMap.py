@@ -50,7 +50,7 @@ def parseWaferPositionsMap(url):
     return sensorPos
 
 
-def drawSensorEquivalentMap(uvzlist,labels,outname,extraText=[],cmapName='Pastel1',zran=None):
+def drawSensorEquivalentMap(uvzlist,labels,outname,extraText=[],cmapName='Pastel1',zran=None,labelSize=5):
 
     fig, ax = plt.subplots(1,figsize=(10, 10))
     ax.set_aspect('equal')
@@ -79,7 +79,7 @@ def drawSensorEquivalentMap(uvzlist,labels,outname,extraText=[],cmapName='Pastel
 
         if len(labels)<i : continue
         label=labels[i]
-        ax.text(x, y, label, ha='center', va='center', size=5 if len(label)>4 else 10)
+        ax.text(x, y, label, ha='center', va='center', size=labelSize)
 
     patchColl=PatchCollection(patches)
     ax.add_collection(patchColl)
@@ -94,13 +94,12 @@ def drawSensorEquivalentMap(uvzlist,labels,outname,extraText=[],cmapName='Pastel
     colors=cmap( cnorm(norm_zvals) )
     patchColl.set_color(colors)
 
-    print circleRadius
     for r in circleRadius:
         plt.Circle((0, 0), r, color='gray', ls='--', fill=False)
 
     ax.autoscale_view()
-    ax.set_xlabel('x') 
-    ax.set_ylabel('y')        
+    ax.set_xlabel('x',fontsize=16) 
+    ax.set_ylabel('y',fontsize=16)        
     ax.set_xlim(xran[0],xran[1])
     ax.set_ylim(yran[0],yran[1])
     ax.text(0.05,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)

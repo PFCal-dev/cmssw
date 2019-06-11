@@ -41,6 +41,11 @@ HGCOccupancyAnalyzer::HGCOccupancyAnalyzer( const edm::ParameterSet &iConfig ) :
   digisCEE_( consumes<HGCalDigiCollection>(edm::InputTag("simHGCalUnsuppressedDigis","EE")) ),
   digisCEH_( consumes<HGCalDigiCollection>(edm::InputTag("simHGCalUnsuppressedDigis","HEfront")) )
 {  
+  // mipEqThr_=iConfig.getParameter<float>("mipEqThr");
+  //fudgeFactor_=iConfig.getParameter<float>("fudgeFactor");
+  mipEqThr_=0.5;
+  fudgeFactor_=0.8;
+
   //parse u-v equivalence map file
   edm::FileInPath uvmapF("SimCalorimetry/HGCalSimAlgos/data/uvequiv.dat");
   std::ifstream inF(uvmapF.fullPath());  
@@ -251,10 +256,10 @@ void HGCOccupancyAnalyzer::analyzeDigis(int isd,edm::Handle<HGCalDigiCollection>
       }  
 
       //normalize to expected MIP response
-      q_mipeq *= mipCorr[waferTypeL];
-      
+      q_mipeq = q_mipeq*mipCorr[waferTypeL-1];
+
       WaferEquivalentId_t key(std::make_tuple(isd,layer,uvEq.first,uvEq.second));
-      waferHistos_[key]->count(waferUV.first,waferUV.second,q_mipeq);
+      waferHistos_[key]->count(waferUV.first,waferUV.second,q_mipeq,mipEqThr_,fudgeFactor_);
     }
 }
 

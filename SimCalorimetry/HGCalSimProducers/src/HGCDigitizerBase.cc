@@ -103,15 +103,15 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
         //the cce depends only on the DetId but the noise may change depending on the charge deposited
         HGCalSiNoiseMap::SiCellOpCharacteristics siop=scal_.getSiCellOpCharacteristics(sigRange,detId);
         cce   = siop.cce;
-        noise = std::max( (float)CLHEP::RandGaussQ::shoot(engine,0.0,siop.noise),0.f);
+        noise = (float)CLHEP::RandGaussQ::shoot(engine,0.0,siop.noise);
       }
       else if (noise_fC_[cell.thickness-1] != 0) {
         cce   = (cce_.empty() ? 1.f : cce_[cell.thickness-1]);
-        noise = std::max( (float)CLHEP::RandGaussQ::shoot(engine,0.0,cell.size*noise_fC_[cell.thickness-1]) , 0.f );
+        noise = (float)CLHEP::RandGaussQ::shoot(engine,0.0,cell.size*noise_fC_[cell.thickness-1]);
       }
 
       //@discuss calibrated (S.cce+N) \approx S+N/cce, prefer to keep digi calibration here 
-      totalCharge+=noise/cce;
+      totalCharge+=noise;
       if(totalCharge<0.f) totalCharge=0.f;
 
       chargeColl[i]=totalCharge;

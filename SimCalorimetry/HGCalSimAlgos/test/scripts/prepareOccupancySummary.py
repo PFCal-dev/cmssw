@@ -3,6 +3,7 @@ import os
 import optparse
 import re
 import pickle
+from sensorEquivalentMap import *
 
 PLOTTITLES={
     'maxcounts'     : 'Hottest wafer equivalent occupancy',
@@ -146,76 +147,14 @@ def showPlotCollSummary(plotColl,extraText,pname,nPerRow=2):
     c.SaveAs(pname+'.png')
 
 
-def showWaferMomentSummary(momentSummary,sensorPos,outdir,idx=0):
-
-    #check the available distributions
-    dists=momentSummary[momentSummary.keys()[0]][idx].keys()
-    
-    import csv
-    fOut=open(os.path.join(outdir,'occupancy_summary.dat'),'w')
-    csv_writer = csv.writer(fOut, delimiter=',')
-
-    occ2d={}
-
-    #loop over each sub-detector layer
-    subdets=set([x[0] for x in sensorPos])
-    for sd in subdets:
-        layers=set( [x[1] for x in sensorPos if x[0]==sd] )
-        for lay in layers:
-                
-            for d in dists:
-                
-                if not d in occ2d: occ2d[d]={}
-
-                layerKey=(sd,lay)
-                occ2d[d][layerKey]=[]
-
-                if not 'counts' in d : continue
-
-                uvzlist=[]
-                labels=[]
-                for waferKey in momentSummary:
-                    isd,ilay,iu,iv=waferKey
-                    if isd!=sd or ilay!=lay :continue
-
-                    ncells,r,z,eta,phi=sensorPos[waferKey]               
-                    occ=[float(x)/float(ncells) for x in momentSummary[waferKey][idx][d]]
-                    occ2d[d][layerKey].append([r,z,100*occ[1]])
-
-                    uvzlist.append( [iu,iv,occ[0]] )
-                    labels.append( r'$%d^{+%d}_{-%d}$'%(100*occ[1],100*(occ[2]-occ[1]),100*(occ[1]-occ[0]) ) )
-
-                if len(uvzlist)==0: continue
-                extraText=[ PLOTTITLES[d],
-                            '%s layer %d'%('CEE' if sd==0 else 'CEH', lay)
-                            ]
-                drawSensorEquivalentMap(uvzlist=uvzlist,
-                                        labels=labels,
-                                        outname=os.path.join(outdir,'%s_sd%d_lay%d'%(d,sd,lay)),
-                                        extraText=extraText,
-                                        cmapName='Wistia',
-                                        zran=[0,1],
-                                        labelSize=14)
-                
-                #write
-                if d=='counts':
-                    for waferData in uvzlist:
-			ncells=sensorPos[(sd,lay,waferData[0],waferData[1])][0]
-                        csv_writer.writerow( [sd,lay,1 if ncells>400 else 0]+waferData )
-
-    fOut.close()
-
-
-
-
 def main():
 
     #parse inputs
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-o', '--out',   dest='output',  help='output directory [%default]',  default='plots', type='string')    
-    parser.add_option('--noWaferPlots',   dest='noWaferPlots',  help='disable wafer plots [%default]',  default=False, action='store_true')
+    parser.add_option('-o', '--out',            dest='output',        help='output directory [%default]',     default='plots', type='string')    
+    parser.add_option(      '--noWaferPlots',   dest='noWaferPlots',  help='disable wafer plots [%default]',  default=False, action='store_true')
     (opt, args) = parser.parse_args()
 
     #define inputs
@@ -277,17 +216,12 @@ def main():
                             pname=os.path.join(opt.output,pname)
                             )
 
-    showWaferMomentSummary(momentSummary,sensorPos,opt.output)
-
     #save summary
-    with open(opt.path.join(opt.output,'summary.pck','w')) as f:
+    with open(os.path.join(opt.output,'summary.pck'),'w') as cache:
         pickle.dump(momentSummary,cache,pickle.HIGHEST_PROTOCOL)
         pickle.dump(globalMomentSummary,cache,pickle.HIGHEST_PROTOCOL)
         pickle.dump(sensorPos,cache,pickle.HIGHEST_PROTOCOL)
             
-
-
-
 
 if __name__ == "__main__":
     main()

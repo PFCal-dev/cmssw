@@ -91,6 +91,8 @@ class HGCOccupancyAnalyzer : public edm::EDAnalyzer
 
   std::map<std::pair<int,int>, std::vector<TH1F *> > hottestWaferH_;
 
+  //thresholds to use for occupancy
+  float mipEqThr_,fudgeFactor_;
 };
  
 
