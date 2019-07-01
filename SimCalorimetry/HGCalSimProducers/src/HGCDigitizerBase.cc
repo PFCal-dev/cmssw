@@ -58,13 +58,22 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
   zeroData.hit_info[0].fill(0.f); //accumulated energy
   zeroData.hit_info[1].fill(0.f); //time-of-flight
 
+  //using namespace std
+  std::cout <<"\nvalidIds.size() = " <<validIds.size() <<std::endl;
+  std::cout <<"validIds[0] det and subdetId: " <<validIds.begin()->det() <<" " <<validIds.begin()->subdetId() <<std::endl;
+
+  std::vector<time_t> innerElapsed, middleElapsed, elapsed;
+
   for( const auto& id : validIds ) {
+    time_t start = time(NULL);
+
     chargeColl.fill(0.f);
     toa.fill(0.f);
     HGCSimHitDataAccumulator::iterator it = simData.find(id);
     HGCCellInfo& cell = ( simData.end() == it ? zeroData : it->second );
     addCellMetadata(cell,theGeom,id);
 
+    time_t innerStart = time(NULL);
     for(size_t i=0; i<cell.hit_info[0].size(); i++) {
       double rawCharge(cell.hit_info[0][i]);
 
@@ -86,6 +95,7 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 
       chargeColl[i]= totalCharge;
     }
+    time_t innerStop = time(NULL);
 
     //run the shaper to create a new data frame
     DFr rawDataFrame( id );
@@ -96,7 +106,24 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 
     //update the output according to the final shape
     updateOutput(coll,rawDataFrame);
+
+    time_t stop = time(NULL);
+    innerElapsed.push_back(innerStop - innerStart);
+    middleElapsed.push_back(stop - innerStop);
+    elapsed.push_back(stop - start);
   }
+
+  std::pair<double,double> elapsedStat =  statSummary(elapsed);
+  std::cout <<"elapsed average = " <<elapsedStat.first <<std::endl;
+  std::cout <<"elapsed std = " <<elapsedStat.second <<std::endl;
+
+  std::pair<double,double> middleElapsedStat =  statSummary(middleElapsed);
+  std::cout <<"middleElapsed average = " <<middleElapsedStat.first <<std::endl;
+  std::cout <<"middleElapsed std = " <<middleElapsedStat.second <<std::endl;
+
+  std::pair<double,double> innerElapsedStat =  statSummary(innerElapsed);
+  std::cout <<"innerElapsed average = " <<innerElapsedStat.first <<std::endl;
+  std::cout <<"innerElapsed std = " <<innerElapsedStat.second <<std::endl;
 }
 
 template<class DFr>
