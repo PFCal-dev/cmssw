@@ -106,6 +106,14 @@ class HGCDigitizerBase {
   void runSimple(std::unique_ptr<DColl> &coll, hgc::HGCSimHitDataAccumulator &simData, 
 		 const CaloSubdetectorGeometry* theGeom, const std::unordered_set<DetId>& validIds,
 		 CLHEP::HepRandomEngine* engine);
+
+  /**
+     @short a GPU version of runSimple
+   */
+  void runSimpleOnGPU(std::unique_ptr<DColl> &coll, hgc::HGCSimHitDataAccumulator &simData, 
+                      const CaloSubdetectorGeometry* theGeom, const std::unordered_set<DetId>& validIds,
+                      CLHEP::HepRandomEngine* engine);
+
   
   /**
      @short prepares the output according to the number of time samples to produce

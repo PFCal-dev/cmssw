@@ -10,6 +10,7 @@
 <use   name="hepmc"/>
 <use   name="CLHEP"/>
 <use   name="vdt_headers"/>
+<use   name="cuda"/>
 <export>
   <lib   name="1"/>
 </export>
