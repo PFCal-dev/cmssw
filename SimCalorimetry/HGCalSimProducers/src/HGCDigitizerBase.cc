@@ -44,7 +44,7 @@ void HGCDigitizerBase<DFr>::run( std::unique_ptr<HGCDigitizerBase::DColl> &digiC
 				 CLHEP::HepRandomEngine* engine) {
   if(digitizationType==0) {
     runSimple(digiColl,simData,theGeom,validIds,engine);
-    runSimpleOnGPU(digiColl,simData,theGeom,validIds,engine);
+    runSimpleOnGPU(digiColl,simData,theGeom,validIds);
   }
   else {                   
     runDigitizer(digiColl,simData,theGeom,validIds,digitizationType,engine);
@@ -111,8 +111,7 @@ template<class DFr>
 void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DColl> &coll,
                                            HGCSimHitDataAccumulator &simData,
                                            const CaloSubdetectorGeometry* theGeom,
-                                           const std::unordered_set<DetId>& validIds,
-                                           CLHEP::HepRandomEngine* engine) {
+                                           const std::unordered_set<DetId>& validIds) {
 
   const size_t Nbx(5); //this is hardcoded
   const uint32_t N(Nbx*validIds.size());
