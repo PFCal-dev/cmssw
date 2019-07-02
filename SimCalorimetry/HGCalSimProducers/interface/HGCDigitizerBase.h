@@ -111,6 +111,13 @@ class HGCDigitizerBase {
      @short prepares the output according to the number of time samples to produce
   */
   void updateOutput(std::unique_ptr<DColl> &coll, const DFr& rawDataFrame);
+
+
+  /**
+     @shot prepares the output based on a NdetId x Nbunches array of words (GPU output)
+   */
+  void updateOutput(const std::unordered_set<DetId>& validIds, const uint32_t *bxWord, std::unique_ptr<HGCDigitizerBase::DColl> &coll);
+
   
   /**
      @short to be specialized by top class

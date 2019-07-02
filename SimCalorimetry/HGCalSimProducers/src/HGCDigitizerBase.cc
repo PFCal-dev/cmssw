@@ -118,6 +118,37 @@ void HGCDigitizerBase<DFr>::updateOutput(std::unique_ptr<HGCDigitizerBase::DColl
   }
 }
 
+//
+template<class DFr>
+void HGCDigitizerBase<DFr>::updateOutput(const std::unordered_set<DetId>& validIds, 
+                                         const uint32_t *bxWord, 
+                                         std::unique_ptr<HGCDigitizerBase::DColl> &coll){
+  unsigned long idx(0);
+  for( const auto& id : validIds ) {
+
+    bool putInEvent(false);
+    DFr dataFrame( id );
+    dataFrame.resize(5);
+   
+    //loop over 5 bunches and fill the dataframe
+    uint32_t idxT=idx*5;
+    for(size_t bx=0; bx<5; bx++) {
+      idxT+=bx;
+      dataFrame.setSample(bx, bxWord[idxT]);
+      if(bx!=2) continue;
+      putInEvent=( (bxWord[idxT] >> HGCSample::kThreshShift) & HGCSample::kThreshMask );
+    }
+
+    //add to event if in-time bunch charge has passed the threshold
+    if(putInEvent)
+      coll->push_back(dataFrame);
+
+    ++idx;    
+  }
+}
+
+
+
 // cause the compiler to generate the appropriate code
 #include "DataFormats/HGCDigi/interface/HGCDigiCollections.h"
 template class HGCDigitizerBase<HGCEEDataFrame>;
