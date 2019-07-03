@@ -52,7 +52,7 @@ void HGCDigitizerBase<DFr>::run( std::unique_ptr<HGCDigitizerBase::DColl> &digiC
 				 uint32_t digitizationType,
 				 CLHEP::HepRandomEngine* engine) {
   if(digitizationType==0) {
-    runSimple(digiColl,simData,theGeom,validIds,engine);
+    //runSimple(digiColl,simData,theGeom,validIds,engine);
     runSimpleOnGPU(digiColl,simData,theGeom,validIds);
   }
   else {
@@ -120,6 +120,7 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
 				      const CaloSubdetectorGeometry* theGeom,
 				      const std::unordered_set<DetId>& validIds) {
 
+  bool debug(false);
   const size_t Nbx(5); //this is hardcoded
   const uint32_t N(Nbx*validIds.size());
 
@@ -129,24 +130,49 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
   uint8_t *type  = (uint8_t*)malloc(N*sizeof(uint8_t));
   uint32_t *rawData = (uint32_t*)malloc(N*sizeof(uint32_t));
   uint32_t idIdx(0);
+
+  if(debug)
+  {
+    std::cout << "--> size charge: " << (sizeof(charge)/sizeof(float)) << std::endl;
+    std::cout << "--> size type: " << (sizeof(type)/sizeof(uint8_t)) << std::endl;
+    std::cout << "--> size rawData: " << (sizeof(rawData)/sizeof(uint32_t)) << std::endl;
+    std::cout << "==>> validIds.size = " << validIds.size() << std::endl;
+  }
+
   for( const auto& id : validIds ) {
 
     HGCSimHitDataAccumulator::iterator it = simData.find(id);
     const HGCCellInfo *cell( simData.end() == it ? NULL : &(it->second) );
 
+    if(debug)
+    {
+      std::cout << "==> idIdx = " << idIdx << std::endl;
+      std::cout << "==>> cell->hit_info[0].size() = " << cell->hit_info[0].size() << std::endl;
+      std::cout << "==>> cell->hit_info[1].size() = " << cell->hit_info[1].size() << std::endl;
+    }
+
     for(size_t i=0; i<Nbx; i++) {
       uint32_t arrIdx(idIdx*Nbx+i);
+      if(debug)
+        std::cout << "==>> arrIdx = " << arrIdx << std::endl;
+
       if(cell!=NULL){
         charge[arrIdx] = cell->hit_info[0][i];
         toa[arrIdx]    = cell->hit_info[1][i];
-        type[arrIdx]   = (uint8_t)(cell->thickness - 100)/100;
+        type[arrIdx]   = cell->thickness;
+
+        if(debug)
+        {
+          std::cout << "==>> cell->thickness " << cell->thickness << std::endl;
+          std::cout << "==>> type[arrIdx] = " << type[arrIdx] << std::endl;
+        }
       }
       else{
         charge[arrIdx]=0.f;
         toa[arrIdx]=0.f;
       }
-      idIdx++;
     }
+    idIdx++;
   }
 
   //device arrays
@@ -163,7 +189,7 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
 
   //allocate N rand floats on the GPU
   float *devRand;
-  cudaMalloc((void **)&devRand, N * sizeof(float));
+  cudaMalloc(&devRand, N*sizeof(float));
 
 
   //call function on the GPU
@@ -178,9 +204,12 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
   cudaFree(d_toa);
   cudaFree(d_charge);
   cudaFree(d_rawData);
+  cudaFree(d_type);
+  cudaFree(devRand);
   free(toa);
   free(charge);
   free(rawData);
+  free(type);
 }
 
 
