@@ -21,6 +21,8 @@
 #include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 
+#include <curand.h>
+
 namespace hgc = hgc_digi;
 
 namespace hgc_digi_utils {
@@ -163,6 +165,16 @@ class HGCDigitizerBase {
 
   //if true will put both in time and out-of-time samples in the event
   bool doTimeSamples_;
+
+  //CUDA specific
+  bool isCUDAInit;
+  float *h_toa, *h_charge, *d_toa, *d_charge,*devRand;
+  uint8_t *h_type, *d_type;
+  uint32_t *h_rawData, *d_rawData;
+  curandGenerator_t d_gen;
+
+  void initCUDA(const uint32_t N);
+  void endCUDA();
 
 };
 

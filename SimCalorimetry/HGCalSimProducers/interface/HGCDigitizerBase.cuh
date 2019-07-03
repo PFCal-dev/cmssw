@@ -2,10 +2,11 @@
 #define HeterogeneousCore_Examples_test_kernel_cuh
 
 #include <cuda_runtime.h>
+#include <curand.h>
 
 __global__
 void addNoise(int n, float* cellCharge, float* cellToa, bool weightMode, float* devRand, uint8_t* cellType, uint* word);
 
-void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, float* devRand, uint8_t* cellType, uint* word);
+void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, float* devRand, uint8_t* cellType, uint* word,curandGenerator_t &d_gen);
 
 #endif

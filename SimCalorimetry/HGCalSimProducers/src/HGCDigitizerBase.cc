@@ -11,7 +11,7 @@ using namespace hgc_digi;
 using namespace hgc_digi_utils;
 
 template<class DFr>
-HGCDigitizerBase<DFr>::HGCDigitizerBase(const edm::ParameterSet& ps) {
+HGCDigitizerBase<DFr>::HGCDigitizerBase(const edm::ParameterSet& ps) : isCUDAInit(false) {
   bxTime_        = ps.getParameter<double>("bxTime");
   myCfg_         = ps.getParameter<edm::ParameterSet>("digiCfg");
   doTimeSamples_ = myCfg_.getParameter< bool >("doTimeSamples");
@@ -124,18 +124,14 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
   const size_t Nbx(5); //this is hardcoded
   const uint32_t N(Nbx*validIds.size());
 
-  //host arrays
-  float *toa     = (float*)malloc(N*sizeof(float));
-  float *charge  = (float*)malloc(N*sizeof(float));
-  uint8_t *type  = (uint8_t*)malloc(N*sizeof(uint8_t));
-  uint32_t *rawData = (uint32_t*)malloc(N*sizeof(uint32_t));
-  uint32_t idIdx(0);
+  initCUDA(N);
 
+  uint32_t idIdx(0);
   if(debug)
   {
-    std::cout << "--> size charge: " << (sizeof(charge)/sizeof(float)) << std::endl;
-    std::cout << "--> size type: " << (sizeof(type)/sizeof(uint8_t)) << std::endl;
-    std::cout << "--> size rawData: " << (sizeof(rawData)/sizeof(uint32_t)) << std::endl;
+    std::cout << "--> size charge: " << (sizeof(h_charge)/sizeof(float)) << std::endl;
+    std::cout << "--> size type: " << (sizeof(h_type)/sizeof(uint8_t)) << std::endl;
+    std::cout << "--> size rawData: " << (sizeof(h_rawData)/sizeof(uint32_t)) << std::endl;
     std::cout << "==>> validIds.size = " << validIds.size() << std::endl;
   }
 
@@ -157,62 +153,73 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
         std::cout << "==>> arrIdx = " << arrIdx << std::endl;
 
       if(cell!=NULL){
-        charge[arrIdx] = cell->hit_info[0][i];
-        toa[arrIdx]    = cell->hit_info[1][i];
-        type[arrIdx]   = cell->thickness;
+        h_charge[arrIdx] = cell->hit_info[0][i];
+        h_toa[arrIdx]    = cell->hit_info[1][i];
+        h_type[arrIdx]   = cell->thickness;
 
         if(debug)
         {
           std::cout << "==>> cell->thickness " << cell->thickness << std::endl;
-          std::cout << "==>> type[arrIdx] = " << type[arrIdx] << std::endl;
+          std::cout << "==>> h_type[arrIdx] = " << h_type[arrIdx] << std::endl;
         }
       }
       else{
-        charge[arrIdx]=0.f;
-        toa[arrIdx]=0.f;
+        h_charge[arrIdx]=0.f;
+        h_toa[arrIdx]=0.f;
       }
     }
     idIdx++;
   }
 
-  //device arrays
-  float *d_toa, *d_charge;
-  uint8_t* d_type;
-  uint32_t *d_rawData;
-  cudaMalloc(&d_toa,     N*sizeof(float));
+  //copy to device
+  cudaMemcpy(d_toa,    h_toa,    N*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_charge, h_charge, N*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_type,   h_type,   N*sizeof(uint8_t), cudaMemcpyHostToDevice);
+
+  //call function on the GPU
+  addNoiseWrapper(N, d_charge, d_toa, toaModeByEnergy(), devRand, d_type, d_rawData,d_gen);
+
+  //copy back result and add to the event
+  cudaMemcpy(h_rawData, d_rawData, N*sizeof(uint32_t), cudaMemcpyDeviceToHost);
+  updateOutput(validIds, h_rawData,coll);
+}
+
+//
+template<class DFr>
+void HGCDigitizerBase<DFr>::initCUDA(const uint32_t N){
+  if(isCUDAInit) return;
+  h_toa     = (float*)malloc(N*sizeof(float)); //host arrays
+  h_charge  = (float*)malloc(N*sizeof(float));
+  h_type  = (uint8_t*)malloc(N*sizeof(uint8_t));
+  h_rawData = (uint32_t*)malloc(N*sizeof(uint32_t));
+  cudaMalloc(&d_toa,     N*sizeof(float));  //device arrays
   cudaMalloc(&d_charge,  N*sizeof(float));
   cudaMalloc(&d_type,    N*sizeof(uint8_t));
   cudaMalloc(&d_rawData, N*sizeof(uint32_t));
-  cudaMemcpy(d_toa,    toa,    N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_charge, charge, N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_type,   type,   N*sizeof(uint8_t), cudaMemcpyHostToDevice);
-
-  //allocate N rand floats on the GPU
-  float *devRand;
   cudaMalloc(&devRand, N*sizeof(float));
 
+  //Create pseudo-random number generator on the device
+  curandCreateGenerator(&d_gen, CURAND_RNG_PSEUDO_DEFAULT);
 
-  //call function on the GPU
-  addNoiseWrapper(N, d_charge, d_toa, toaModeByEnergy(), devRand, d_type, d_rawData);
+  isCUDAInit=true;
+}
 
 
-  //copy back result and add to the event
-  cudaMemcpy(rawData, d_rawData, N*sizeof(uint32_t), cudaMemcpyDeviceToHost);
-  updateOutput(validIds, rawData,coll);
-
+//
+template<class DFr>
+void HGCDigitizerBase<DFr>::endCUDA(){
   //free memory
   cudaFree(d_toa);
   cudaFree(d_charge);
   cudaFree(d_rawData);
   cudaFree(d_type);
   cudaFree(devRand);
-  free(toa);
-  free(charge);
-  free(rawData);
-  free(type);
+  free(h_toa);
+  free(h_charge);
+  free(h_rawData);
+  free(h_type);
+  curandDestroyGenerator(d_gen);
 }
-
-
 
 
 template<class DFr>
