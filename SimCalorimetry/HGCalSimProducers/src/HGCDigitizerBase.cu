@@ -36,20 +36,15 @@ void addNoise(int n, float* cellCharge, float* cellToa, bool weightMode, float* 
 }
 
 
-void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, float* devRand, uint8_t* cellType, uint* word)
-{
-  curandGenerator_t gen;
-  //Create pseudo-random number generator
-  curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, float* devRand, uint8_t* cellType, uint* word,curandGenerator_t &gen)
+{    
 
   //Generate n floats on device
   std::cout << "--> N " << n << std::endl;
   curandGenerateNormal(gen, devRand, n, 0.f, 1.f);
-  curandDestroyGenerator(gen);
   std::cout << "--> DONE" << std::endl;
-
 
   //call function on the GPU
   addNoise<<<(n+255)/256, 256>>>(n, cellCharge, cellToa, weightMode, devRand, cellType, word);
-
-}
+  std::cout << "--> DONE NOISE" << std::endl;
+}         
