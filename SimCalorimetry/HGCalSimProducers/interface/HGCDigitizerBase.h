@@ -130,7 +130,9 @@ class HGCDigitizerBase {
      @short DTOR
   */
   virtual ~HGCDigitizerBase()
-    { };
+    { 
+      if(isCUDAInit) endCUDA();
+    };
 
 
 
