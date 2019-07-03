@@ -2,6 +2,11 @@
 #include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 
+#include <cstdint>
+
+#include <cuda.h>
+#include "SimCalorimetry/HGCalSimProducers/interface/HGCDigitizerBase.cuh"
+
 using namespace hgc_digi;
 using namespace hgc_digi_utils;
 
@@ -32,6 +37,11 @@ HGCDigitizerBase<DFr>::HGCDigitizerBase(const edm::ParameterSet& ps) {
   edm::ParameterSet feCfg = myCfg_.getParameter<edm::ParameterSet>("feCfg");
   myFEelectronics_        = std::unique_ptr<HGCFEElectronics<DFr> >( new HGCFEElectronics<DFr>(feCfg) );
   myFEelectronics_->SetNoiseValues(noise_fC_);
+
+  adcThreshold_fC_  = feCfg.getParameter<double>("adcThreshold_fC");
+  adcSaturation_fC_ = feCfg.getParameter<double>("adcSaturation_fC");
+  adcNbits_         = feCfg.getParameter<uint32_t>("adcNbits");
+
 }
 
 template<class DFr>
@@ -41,8 +51,13 @@ void HGCDigitizerBase<DFr>::run( std::unique_ptr<HGCDigitizerBase::DColl> &digiC
 				 const std::unordered_set<DetId>& validIds,
 				 uint32_t digitizationType,
 				 CLHEP::HepRandomEngine* engine) {
-  if(digitizationType==0) runSimple(digiColl,simData,theGeom,validIds,engine);
-  else                    runDigitizer(digiColl,simData,theGeom,validIds,digitizationType,engine);
+  if(digitizationType==0) {
+    //runSimple(digiColl,simData,theGeom,validIds,engine);
+    runSimpleOnGPU(digiColl,simData,theGeom,validIds);
+  }
+  else {
+    runDigitizer(digiColl,simData,theGeom,validIds,digitizationType,engine);
+  }
 }
 
 template<class DFr>
@@ -100,6 +115,107 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 }
 
 template<class DFr>
+void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DColl> &coll,
+				      HGCSimHitDataAccumulator &simData,
+				      const CaloSubdetectorGeometry* theGeom,
+				      const std::unordered_set<DetId>& validIds) {
+
+  bool debug(false);
+  const size_t Nbx(5); //this is hardcoded
+  const uint32_t N(Nbx*validIds.size());
+
+  //host arrays
+  float *toa     = (float*)malloc(N*sizeof(float));
+  float *charge  = (float*)malloc(N*sizeof(float));
+  uint8_t *type  = (uint8_t*)malloc(N*sizeof(uint8_t));
+  uint32_t *rawData = (uint32_t*)malloc(N*sizeof(uint32_t));
+  uint32_t idIdx(0);
+
+  if(debug)
+  {
+    std::cout << "--> size charge: " << (sizeof(charge)/sizeof(float)) << std::endl;
+    std::cout << "--> size type: " << (sizeof(type)/sizeof(uint8_t)) << std::endl;
+    std::cout << "--> size rawData: " << (sizeof(rawData)/sizeof(uint32_t)) << std::endl;
+    std::cout << "==>> validIds.size = " << validIds.size() << std::endl;
+  }
+
+  for( const auto& id : validIds ) {
+
+    HGCSimHitDataAccumulator::iterator it = simData.find(id);
+    const HGCCellInfo *cell( simData.end() == it ? NULL : &(it->second) );
+
+    if(debug)
+    {
+      std::cout << "==> idIdx = " << idIdx << std::endl;
+      std::cout << "==>> cell->hit_info[0].size() = " << cell->hit_info[0].size() << std::endl;
+      std::cout << "==>> cell->hit_info[1].size() = " << cell->hit_info[1].size() << std::endl;
+    }
+
+    for(size_t i=0; i<Nbx; i++) {
+      uint32_t arrIdx(idIdx*Nbx+i);
+      if(debug)
+        std::cout << "==>> arrIdx = " << arrIdx << std::endl;
+
+      if(cell!=NULL){
+        charge[arrIdx] = cell->hit_info[0][i];
+        toa[arrIdx]    = cell->hit_info[1][i];
+        type[arrIdx]   = cell->thickness;
+
+        if(debug)
+        {
+          std::cout << "==>> cell->thickness " << cell->thickness << std::endl;
+          std::cout << "==>> type[arrIdx] = " << type[arrIdx] << std::endl;
+        }
+      }
+      else{
+        charge[arrIdx]=0.f;
+        toa[arrIdx]=0.f;
+      }
+    }
+    idIdx++;
+  }
+
+  //device arrays
+  float *d_toa, *d_charge;
+  uint8_t* d_type;
+  uint32_t *d_rawData;
+  cudaMalloc(&d_toa,     N*sizeof(float));
+  cudaMalloc(&d_charge,  N*sizeof(float));
+  cudaMalloc(&d_type,    N*sizeof(uint8_t));
+  cudaMalloc(&d_rawData, N*sizeof(uint32_t));
+  cudaMemcpy(d_toa,    toa,    N*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_charge, charge, N*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_type,   type,   N*sizeof(uint8_t), cudaMemcpyHostToDevice);
+
+  //allocate N rand floats on the GPU
+  float *devRand;
+  cudaMalloc(&devRand, N*sizeof(float));
+
+
+  //call function on the GPU
+  addNoiseWrapper(N, d_charge, d_toa, toaModeByEnergy(), devRand, d_type, d_rawData);
+
+
+  //copy back result and add to the event
+  cudaMemcpy(rawData, d_rawData, N*sizeof(uint32_t), cudaMemcpyDeviceToHost);
+  updateOutput(validIds, rawData,coll);
+
+  //free memory
+  cudaFree(d_toa);
+  cudaFree(d_charge);
+  cudaFree(d_rawData);
+  cudaFree(d_type);
+  cudaFree(devRand);
+  free(toa);
+  free(charge);
+  free(rawData);
+  free(type);
+}
+
+
+
+
+template<class DFr>
 void HGCDigitizerBase<DFr>::updateOutput(std::unique_ptr<HGCDigitizerBase::DColl> &coll,
                                           const DFr& rawDataFrame) {
   int itIdx(9);
@@ -115,6 +231,35 @@ void HGCDigitizerBase<DFr>::updateOutput(std::unique_ptr<HGCDigitizerBase::DColl
 
   if(putInEvent) {
     coll->push_back(dataFrame);
+  }
+}
+
+
+template<class DFr>
+void HGCDigitizerBase<DFr>::updateOutput(const std::unordered_set<DetId>& validIds,
+                                         const uint32_t *bxWord,
+                                         std::unique_ptr<HGCDigitizerBase::DColl> &coll){
+  unsigned long idx(0);
+  for( const auto& id : validIds ) {
+
+    bool putInEvent(false);
+    DFr dataFrame( id );
+    dataFrame.resize(5);
+
+    //loop over 5 bunches and fill the dataframe
+    uint32_t idxT=idx*5;
+    for(size_t bx=0; bx<5; bx++) {
+      idxT+=bx;
+      dataFrame.setSample(bx, bxWord[idxT]);
+      if(bx!=2) continue;
+      putInEvent=( (bxWord[idxT] >> HGCSample::kThreshShift) & HGCSample::kThreshMask );
+    }
+
+    //add to event if in-time bunch charge has passed the threshold
+    if(putInEvent)
+      coll->push_back(dataFrame);
+
+    ++idx;
   }
 }
 

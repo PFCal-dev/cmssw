@@ -65,22 +65,22 @@ namespace hgc_digi_utils {
 template <class DFr>
 class HGCDigitizerBase {
  public:
-  
+
   typedef DFr DigiType;
 
   typedef edm::SortedCollection<DFr> DColl;
-  
+
   /**
      @short CTOR
   */
-  HGCDigitizerBase(const edm::ParameterSet &ps); 
+  HGCDigitizerBase(const edm::ParameterSet &ps);
  /**
     @short steer digitization mode
  */
-  void run(std::unique_ptr<DColl> &digiColl, hgc::HGCSimHitDataAccumulator &simData, 
+  void run(std::unique_ptr<DColl> &digiColl, hgc::HGCSimHitDataAccumulator &simData,
 	   const CaloSubdetectorGeometry* theGeom, const std::unordered_set<DetId>& validIds,
 	   uint32_t digitizationType,CLHEP::HepRandomEngine* engine);
-  
+
   /**
      @short getters
   */
@@ -92,15 +92,28 @@ class HGCDigitizerBase {
   /**
      @short a trivial digitization: sum energies and digitize without noise
    */
-  void runSimple(std::unique_ptr<DColl> &coll, hgc::HGCSimHitDataAccumulator &simData, 
+  void runSimple(std::unique_ptr<DColl> &coll, hgc::HGCSimHitDataAccumulator &simData,
 		 const CaloSubdetectorGeometry* theGeom, const std::unordered_set<DetId>& validIds,
 		 CLHEP::HepRandomEngine* engine);
-  
+
+ /**
+    @short a trivial digitization: sum energies and digitize without noise
+  */
+ void runSimpleOnGPU(std::unique_ptr<DColl> &coll, hgc::HGCSimHitDataAccumulator &simData,
+		 const CaloSubdetectorGeometry* theGeom, const std::unordered_set<DetId>& validIds);
+
   /**
      @short prepares the output according to the number of time samples to produce
   */
   void updateOutput(std::unique_ptr<DColl> &coll, const DFr& rawDataFrame);
-  
+
+
+  /**
+	     @shot prepares the output based on a NdetId x Nbunches array of words (GPU output)
+	   */
+	void updateOutput(const std::unordered_set<DetId>& validIds, const uint32_t *bxWord, std::unique_ptr<HGCDigitizerBase::DColl> &coll);
+
+
   /**
      @short to be specialized by top class
   */
@@ -110,35 +123,44 @@ class HGCDigitizerBase {
   {
     throw cms::Exception("HGCDigitizerBaseException") << " Failed to find specialization of runDigitizer";
   }
-  
+
   /**
      @short DTOR
   */
-  virtual ~HGCDigitizerBase() 
+  virtual ~HGCDigitizerBase()
     { };
-  
-  
+
+
 
  protected:
-  
+
   //baseline configuration
   edm::ParameterSet myCfg_;
-  
+
   //1keV in fC
   float keV2fC_;
-  
+
   //noise level
   std::vector<float> noise_fC_;
 
   //charge collection efficiency
   std::vector<double> cce_;
-  
+
   //front-end electronics model
   std::unique_ptr<HGCFEElectronics<DFr> > myFEelectronics_;
 
   //bunch time
   double bxTime_;
-  
+
+  //ZS thresholds
+  float adcThreshold_fC_;
+
+  //salturation
+  float adcSaturation_fC_;
+
+  //adcNbits
+  uint32_t adcNbits_;
+
   //if true will put both in time and out-of-time samples in the event
   bool doTimeSamples_;
 
