@@ -130,7 +130,7 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
   if(debug)
   {
     std::cout << "--> size charge: " << (sizeof(h_charge)/sizeof(float)) << std::endl;
-    std::cout << "--> size type: " << (sizeof(h_type)/sizeof(uint8_t)) << std::endl;
+    std::cout << "--> size type: " << (sizeof(h_type)/sizeof(uint16_t)) << std::endl;
     std::cout << "--> size rawData: " << (sizeof(h_rawData)/sizeof(uint32_t)) << std::endl;
     std::cout << "==>> validIds.size = " << validIds.size() << std::endl;
   }
@@ -153,8 +153,8 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
         std::cout << "==>> arrIdx = " << arrIdx << std::endl;
 
       if(cell!=NULL){
-        h_charge[arrIdx] = cell->hit_info[0][i];
-        h_toa[arrIdx]    = cell->hit_info[1][i];
+        h_charge[arrIdx] = cell->hit_info[0][i+7];
+        h_toa[arrIdx]    = cell->hit_info[1][i+7];
         h_type[arrIdx]   = cell->thickness;
 
         if(debug)
@@ -174,7 +174,7 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
   //copy to device
   cudaMemcpy(d_toa,    h_toa,    N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_charge, h_charge, N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_type,   h_type,   N*sizeof(uint8_t), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_type,   h_type,   N*sizeof(uint16_t), cudaMemcpyHostToDevice);
 
   //call function on the GPU
   addNoiseWrapper(N, d_charge, d_toa, toaModeByEnergy(), devRand, d_type, d_rawData,d_gen);
@@ -190,11 +190,11 @@ void HGCDigitizerBase<DFr>::initCUDA(const uint32_t N){
   if(isCUDAInit) return;
   h_toa     = (float*)malloc(N*sizeof(float)); //host arrays
   h_charge  = (float*)malloc(N*sizeof(float));
-  h_type  = (uint8_t*)malloc(N*sizeof(uint8_t));
+  h_type  = (uint16_t*)malloc(N*sizeof(uint16_t));
   h_rawData = (uint32_t*)malloc(N*sizeof(uint32_t));
   cudaMalloc(&d_toa,     N*sizeof(float));  //device arrays
   cudaMalloc(&d_charge,  N*sizeof(float));
-  cudaMalloc(&d_type,    N*sizeof(uint8_t));
+  cudaMalloc(&d_type,    N*sizeof(uint16_t));
   cudaMalloc(&d_rawData, N*sizeof(uint32_t));
   cudaMalloc(&devRand, N*sizeof(float));
 
