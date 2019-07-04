@@ -23,7 +23,7 @@ void addNoise(int n, float* cellCharge, float* cellToa, bool weightMode, float* 
      toa = toa/rawCharge;
 
    float totalCharge = rawCharge;
-   totalCharge += std::max(randNum*noise[type], 0.f);
+   totalCharge += randNum*noise[type];
    if(totalCharge<0.f) totalCharge=0.f;
 
    bool passThr=(totalCharge>0.672);

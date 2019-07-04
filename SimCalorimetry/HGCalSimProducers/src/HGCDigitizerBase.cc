@@ -66,7 +66,6 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 				      const CaloSubdetectorGeometry* theGeom,
 				      const std::unordered_set<DetId>& validIds,
 				      CLHEP::HepRandomEngine* engine) {
-  HGCSimHitData chargeColl,toa;
 
   // this represents a cell with no signal charge
   HGCCellInfo zeroData;
@@ -79,22 +78,22 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 
   int globalCount = 0;
   for( const auto& id : validIds ) {
-    chargeColl.fill(0.f);
-    toa.fill(0.f);
     HGCSimHitDataAccumulator::iterator it = simData.find(id);
     HGCCellInfo& cell = ( simData.end() == it ? zeroData : it->second );
     addCellMetadata(cell,theGeom,id);
 
     //std::cout << "==>> " << cell.thickness << std::endl;
 
+    float noise[] = {0.168,0.336,0.256};
+
 
     for(size_t i=0; i<Nbx; i++) {
       double rawCharge(cell.hit_info[0][i+7]);
 
       //time of arrival
-      toa[i]=cell.hit_info[1][i+7];
+      float toa = cell.hit_info[1][i+7];
       if(toaModeByEnergy() && rawCharge>0)
-        toa[i]=cell.hit_info[1][i+7]/rawCharge;
+        toa = toa/rawCharge;
 
       //convert total energy in GeV to charge (fC)
       //double totalEn=rawEn*1e6*keV2fC_;
@@ -103,13 +102,12 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
       //add noise (in fC)
       //we assume it's randomly distributed and won't impact ToA measurement
       //also assume that it is related to the charge path only and that noise fluctuation for ToA circuit be handled separately
-      if (noise_fC_[cell.thickness-1] != 0)
-        totalCharge += std::max( (float)CLHEP::RandGaussQ::shoot(engine,0.0,cell.size*noise_fC_[cell.thickness-1]) , 0.f );
+      totalCharge += (float)CLHEP::RandGaussQ::shoot(engine, 0.0, 1.) * noise[cell.thickness-1];
       if(totalCharge<0.f) totalCharge=0.f;
 
       bool passThr=(totalCharge>0.672);
       uint16_t finalCharge=(uint16_t)(fminf( totalCharge, 100.)/0.0977);
-      uint16_t finalToA=(uint16_t)(toa[i]/0.0244);
+      uint16_t finalToA=(uint16_t)(toa/0.0244);
 
       //std::cout << "==>> rawCharge, totalCharge, toa " << rawCharge << " " << finalCharge << " " << finalToA << std::endl;
 
