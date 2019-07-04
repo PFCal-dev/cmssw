@@ -130,7 +130,7 @@ class HGCDigitizerBase {
      @short DTOR
   */
   virtual ~HGCDigitizerBase()
-    { 
+    {
       if(isCUDAInit) endCUDA();
     };
 
@@ -170,8 +170,8 @@ class HGCDigitizerBase {
 
   //CUDA specific
   bool isCUDAInit;
-  float *h_toa, *h_charge, *d_toa, *d_charge,*devRand;
-  uint8_t *h_type, *d_type;
+  float *h_toa, *h_charge, *d_toa, *d_charge,*d_rand;
+  uint16_t *h_type, *d_type;
   uint32_t *h_rawData, *d_rawData;
   curandGenerator_t d_gen;
 
