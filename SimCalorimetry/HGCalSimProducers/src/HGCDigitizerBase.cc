@@ -52,8 +52,8 @@ void HGCDigitizerBase<DFr>::run( std::unique_ptr<HGCDigitizerBase::DColl> &digiC
 				 uint32_t digitizationType,
 				 CLHEP::HepRandomEngine* engine) {
   if(digitizationType==0) {
-    //runSimple(digiColl,simData,theGeom,validIds,engine);
-    runSimpleOnGPU(digiColl,simData,theGeom,validIds);
+    runSimple(digiColl,simData,theGeom,validIds,engine);
+    //runSimpleOnGPU(digiColl,simData,theGeom,validIds);
   }
   else {
     runDigitizer(digiColl,simData,theGeom,validIds,digitizationType,engine);
@@ -73,6 +73,11 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
   zeroData.hit_info[0].fill(0.f); //accumulated energy
   zeroData.hit_info[1].fill(0.f); //time-of-flight
 
+  const size_t Nbx(5); //this is hardcoded
+  const uint32_t N(Nbx*validIds.size());
+  h_rawData = (uint32_t*)malloc(N*sizeof(uint32_t));
+
+  int globalCount = 0;
   for( const auto& id : validIds ) {
     chargeColl.fill(0.f);
     toa.fill(0.f);
@@ -80,13 +85,16 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
     HGCCellInfo& cell = ( simData.end() == it ? zeroData : it->second );
     addCellMetadata(cell,theGeom,id);
 
-    for(size_t i=0; i<cell.hit_info[0].size(); i++) {
-      double rawCharge(cell.hit_info[0][i]);
+    //std::cout << "==>> " << cell.thickness << std::endl;
+
+
+    for(size_t i=0; i<Nbx; i++) {
+      double rawCharge(cell.hit_info[0][i+7]);
 
       //time of arrival
-      toa[i]=cell.hit_info[1][i];
-      if(myFEelectronics_->toaMode()==HGCFEElectronics<DFr>::WEIGHTEDBYE && rawCharge>0)
-        toa[i]=cell.hit_info[1][i]/rawCharge;
+      toa[i]=cell.hit_info[1][i+7];
+      if(toaModeByEnergy() && rawCharge>0)
+        toa[i]=cell.hit_info[1][i+7]/rawCharge;
 
       //convert total energy in GeV to charge (fC)
       //double totalEn=rawEn*1e6*keV2fC_;
@@ -99,19 +107,23 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
         totalCharge += std::max( (float)CLHEP::RandGaussQ::shoot(engine,0.0,cell.size*noise_fC_[cell.thickness-1]) , 0.f );
       if(totalCharge<0.f) totalCharge=0.f;
 
-      chargeColl[i]= totalCharge;
+      bool passThr=(totalCharge>0.672);
+      uint16_t finalCharge=(uint16_t)(fminf( totalCharge, 100.)/0.0977);
+      uint16_t finalToA=(uint16_t)(toa[i]/0.0244);
+
+      //std::cout << "==>> rawCharge, totalCharge, toa " << rawCharge << " " << finalCharge << " " << finalToA << std::endl;
+
+      uint32_t word = ( (passThr<<31) |
+                      ((finalToA & 0x3ff) <<13) |
+                      ((finalCharge & 0xfff)));
+
+      h_rawData[globalCount] = word;
+      ++globalCount;
     }
-
-    //run the shaper to create a new data frame
-    DFr rawDataFrame( id );
-    if( !cce_.empty() )
-      myFEelectronics_->runShaper(rawDataFrame, chargeColl, toa, cell.thickness, engine, cce_[cell.thickness-1]);
-    else
-      myFEelectronics_->runShaper(rawDataFrame, chargeColl, toa, cell.thickness, engine);
-
-    //update the output according to the final shape
-    updateOutput(coll,rawDataFrame);
   }
+
+  //update the output according to the final shape
+  updateOutput(validIds, h_rawData, coll);
 }
 
 template<class DFr>
@@ -121,6 +133,10 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
 				      const std::unordered_set<DetId>& validIds) {
 
   bool debug(false);
+  HGCCellInfo zeroData;
+  zeroData.hit_info[0].fill(0.f); //accumulated energy
+  zeroData.hit_info[1].fill(0.f); //time-of-flight
+
   const size_t Nbx(5); //this is hardcoded
   const uint32_t N(Nbx*validIds.size());
 
@@ -138,7 +154,8 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
   for( const auto& id : validIds ) {
 
     HGCSimHitDataAccumulator::iterator it = simData.find(id);
-    const HGCCellInfo *cell( simData.end() == it ? NULL : &(it->second) );
+    HGCCellInfo* cell( simData.end() == it ? &zeroData : &(it->second) );
+    addCellMetadata(*cell, &(*theGeom), id);
 
     if(debug)
     {
@@ -155,7 +172,7 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
       if(cell!=NULL){
         h_charge[arrIdx] = cell->hit_info[0][i+7];
         h_toa[arrIdx]    = cell->hit_info[1][i+7];
-        h_type[arrIdx]   = cell->thickness;
+        h_type[arrIdx]   = cell->thickness-1;
 
         if(debug)
         {

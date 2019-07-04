@@ -3,11 +3,12 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <iostream>
+#include <assert.h>
 #include "HeterogeneousCore/CUDAUtilities/interface/cudaCheck.h"
 
 
 __global__
-void addNoise(int n, float* cellCharge, float* cellToa, bool weightMode, float* rand, uint16_t* cellType, uint* word)
+void addNoise(int n, float* cellCharge, float* cellToa, bool weightMode, float* rand, uint16_t* cellType, uint32_t* word)
 {
   for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) //protection
   {
@@ -37,7 +38,7 @@ void addNoise(int n, float* cellCharge, float* cellToa, bool weightMode, float* 
 }
 
 
-void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, float* rand, uint16_t* cellType, uint* word,curandGenerator_t &gen)
+void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, float* rand, uint16_t* cellType, uint32_t* word, curandGenerator_t &gen)
 {
 
   //Generate n floats on device
@@ -49,6 +50,6 @@ void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, 
   addNoise<<<(n+255)/256, 256>>>(n, cellCharge, cellToa, weightMode, rand, cellType, word);
   cudaCheck(cudaDeviceSynchronize());
   cudaCheck(cudaGetLastError());
-  std::cout << std::endl;
   std::cout << "--> DONE NOISE" << std::endl;
+  std::cout << std::endl;
 }

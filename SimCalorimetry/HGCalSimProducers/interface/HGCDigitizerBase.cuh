@@ -5,8 +5,8 @@
 #include <curand.h>
 
 __global__
-void addNoise(int n, float* cellCharge, float* cellToa, bool weightMode, float* rand, uint16_t* cellType, uint* word);
+void addNoise(int n, float* cellCharge, float* cellToa, bool weightMode, float* rand, uint16_t* cellType, uint32_t* word);
 
-void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, float* rand, uint16_t* cellType, uint* word, curandGenerator_t &gen);
+void addNoiseWrapper(int n, float* cellCharge, float* cellToa, bool weightMode, float* rand, uint16_t* cellType, uint32_t* word, curandGenerator_t &gen);
 
 #endif
