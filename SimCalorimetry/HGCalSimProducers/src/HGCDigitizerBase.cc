@@ -53,7 +53,9 @@ void HGCDigitizerBase<DFr>::run( std::unique_ptr<HGCDigitizerBase::DColl> &digiC
 				 CLHEP::HepRandomEngine* engine) {
   if(digitizationType==0) {
     runSimple(digiColl,simData,theGeom,validIds,engine);
-    //runSimpleOnGPU(digiColl,simData,theGeom,validIds);
+  }
+  else if(digitizationType==1) {
+    runSimpleOnGPU(digiColl,simData,theGeom,validIds);
   }
   else {
     runDigitizer(digiColl,simData,theGeom,validIds,digitizationType,engine);
@@ -66,6 +68,8 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 				      const CaloSubdetectorGeometry* theGeom,
 				      const std::unordered_set<DetId>& validIds,
 				      CLHEP::HepRandomEngine* engine) {
+
+  std::cout << "==>>> runSimple <<===" << std::endl;
 
   // this represents a cell with no signal charge
   HGCCellInfo zeroData;
@@ -129,6 +133,8 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
 				      HGCSimHitDataAccumulator &simData,
 				      const CaloSubdetectorGeometry* theGeom,
 				      const std::unordered_set<DetId>& validIds) {
+
+  std::cout << "==>>> runSimpleOnGPU <<===" << std::endl;
 
   bool debug(false);
   HGCCellInfo zeroData;

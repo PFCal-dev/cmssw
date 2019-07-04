@@ -82,7 +82,11 @@ process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
         filterName = cms.untracked.string('')
     ),
     fileName = cms.untracked.string('Events.root'),
-    outputCommands = process.FEVTDEBUGHLTEventContent.outputCommands,
+    outputCommands = cms.untracked.vstring('keep *_*_*_*',
+                                            'drop *_mix_*_*',
+                                            'keep *_*_*GPU*_*'
+                                            ),
+    #outputCommands = process.FEVTDEBUGHLTEventContent.outputCommands,
     splitLevel = cms.untracked.int32(0)
 )
 
@@ -132,11 +136,6 @@ process.mix.input.fileNames = cms.untracked.vstring(
 
 
 
-#from SimCalorimetry.HGCalSimProducers.hgcalDigitizer_cfi import hgceeDigitizer, hgchefrontDigitizer
-#process.theDigitizersValid.theDigitizers=cms.PSet( process.hgceeDigitizer )
-
-
-
 #-------------------
 # ntuplizer imports
 #-------------------
@@ -150,6 +149,14 @@ process.load("HGCalAnalysis.HGCalTreeMaker.HGCalTupleMaker_HGCSimHits_cfi")
 process.load("HGCalAnalysis.HGCalTreeMaker.HGCalTupleMaker_SimTracks_cfi")
 process.load("HGCalAnalysis.HGCalTreeMaker.HGCalTupleMaker_RecoTracks_cfi")
 
+process.hgcalTupleHGCDigisGPU = process.hgcalTupleHGCDigis.clone(  source = cms.untracked.VInputTag(
+        cms.untracked.InputTag("mix","HGCDigisEEGPU"),
+        cms.untracked.InputTag("mix","HGCDigisHEfrontGPU"),
+        cms.untracked.InputTag("simHGCalUnsuppressedDigis","HEback")
+        ),
+        Prefix = cms.untracked.string  ("GPUHGCDigi")
+)
+
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string("muGun_NTU.root")
 )
@@ -158,6 +165,7 @@ process.ntu = cms.Sequence(
     #process.hgcalTupleGenParticles*
     #process.hgcalTupleHGCSimHits*
     process.hgcalTupleHGCDigis*
+    process.hgcalTupleHGCDigisGPU*
     process.hgcalTupleTree
 )
 process.ntu_path = cms.Path(
@@ -165,7 +173,20 @@ process.ntu_path = cms.Path(
 )
 
 
+
+ceeOnGPU=process.mix.digitizers.hgceeDigitizer.clone(digitizationType  = cms.uint32(1),
+                                                     digiCollection    = cms.string("HGCDigisEEGPU")
+                                                     );
+cehOnGPU=process.mix.digitizers.hgchefrontDigitizer.clone(digitizationType  = cms.uint32(1),
+                                                          digiCollection    = cms.string("HGCDigisHEfrontGPU")
+                                                          );
+
+process.theDigitizersValid.ceeDigitizerOnGPU =cms.PSet( ceeOnGPU )
+process.theDigitizersValid.cehDigitizerOnGPU =cms.PSet( cehOnGPU )
+
 process.mix.digitizers = cms.PSet(process.theDigitizersValid)
+
+
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic', '')
 
