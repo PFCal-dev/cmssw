@@ -3,6 +3,7 @@
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 
 #include <cstdint>
+#include <chrono>
 
 #include <cuda.h>
 #include "SimCalorimetry/HGCalSimProducers/interface/HGCDigitizerBase.cuh"
@@ -51,6 +52,11 @@ void HGCDigitizerBase<DFr>::run( std::unique_ptr<HGCDigitizerBase::DColl> &digiC
 				 const std::unordered_set<DetId>& validIds,
 				 uint32_t digitizationType,
 				 CLHEP::HepRandomEngine* engine) {
+
+
+  std::cout << "--> N channels = " << validIds.size() << std::endl;
+
+
   if(digitizationType==0) {
     runSimple(digiColl,simData,theGeom,validIds,engine);
   }
@@ -69,7 +75,10 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 				      const std::unordered_set<DetId>& validIds,
 				      CLHEP::HepRandomEngine* engine) {
 
-  std::cout << "==>>> runSimple <<===" << std::endl;
+
+  auto startCPU = std::chrono::system_clock::now();
+  //std::cout << "==>>> runSimple <<===" << std::endl;
+
 
   // this represents a cell with no signal charge
   HGCCellInfo zeroData;
@@ -124,6 +133,10 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
     }
   }
 
+  auto endCPU = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_seconds_CPU = endCPU-startCPU;
+  std::cout << "==>>> CPU time (s): " << elapsed_seconds_CPU.count() << std::endl;
+
   //update the output according to the final shape
   updateOutput(validIds, h_rawData, coll);
 }
@@ -134,7 +147,9 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
 				      const CaloSubdetectorGeometry* theGeom,
 				      const std::unordered_set<DetId>& validIds) {
 
-  std::cout << "==>>> runSimpleOnGPU <<===" << std::endl;
+  auto startGPU = std::chrono::system_clock::now();
+
+  //std::cout << "==>>> runSimpleOnGPU <<===" << std::endl;
 
   bool debug(false);
   HGCCellInfo zeroData;
@@ -203,6 +218,12 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
 
   //copy back result and add to the event
   cudaMemcpy(h_rawData, d_rawData, N*sizeof(uint32_t), cudaMemcpyDeviceToHost);
+
+
+  auto endGPU = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_seconds_GPU = endGPU-startGPU;
+  std::cout << "==>>> GPU time (s) " << elapsed_seconds_GPU.count() << std::endl;
+
   updateOutput(validIds, h_rawData, coll);
 }
 
@@ -269,6 +290,7 @@ void HGCDigitizerBase<DFr>::updateOutput(const std::unordered_set<DetId>& validI
                                          const uint32_t *bxWord,
                                          std::unique_ptr<HGCDigitizerBase::DColl> &coll){
   unsigned long idx(0);
+  //coll->reserve(50000);
   for( const auto& id : validIds ) {
 
     bool putInEvent(false);
