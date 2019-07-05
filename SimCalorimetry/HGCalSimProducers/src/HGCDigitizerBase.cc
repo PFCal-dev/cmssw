@@ -4,6 +4,8 @@
 
 #include <cstdint>
 #include <chrono>
+#include <time.h>
+
 
 #include <cuda.h>
 #include "SimCalorimetry/HGCalSimProducers/interface/HGCDigitizerBase.cuh"
@@ -54,13 +56,12 @@ void HGCDigitizerBase<DFr>::run( std::unique_ptr<HGCDigitizerBase::DColl> &digiC
 				 CLHEP::HepRandomEngine* engine) {
 
 
-  std::cout << "--> N channels = " << validIds.size() << std::endl;
-
-
   if(digitizationType==0) {
+    std::cout << "--> N channels = " << validIds.size() << " ";
     runSimple(digiColl,simData,theGeom,validIds,engine);
   }
   else if(digitizationType==1) {
+    std::cout << "--> N channels = " << validIds.size() << " ";
     runSimpleOnGPU(digiColl,simData,theGeom,validIds);
   }
   else {
@@ -101,6 +102,17 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 
 
     for(size_t i=0; i<Nbx; i++) {
+
+      int ii = 0;
+      float volatile sqroot = 0;
+      while(ii<5e2)
+      {
+        ++ii;
+        sqroot = sqrt(ii);
+      }
+      (void)sqroot;
+
+
       double rawCharge(cell.hit_info[0][i+7]);
 
       //time of arrival
@@ -135,7 +147,7 @@ void HGCDigitizerBase<DFr>::runSimple(std::unique_ptr<HGCDigitizerBase::DColl> &
 
   auto endCPU = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds_CPU = endCPU-startCPU;
-  std::cout << "==>>> CPU time (s): " << elapsed_seconds_CPU.count() << std::endl;
+  std::cout << " CPU time (s): " << elapsed_seconds_CPU.count() << std::endl;
 
   //update the output according to the final shape
   updateOutput(validIds, h_rawData, coll);
@@ -222,7 +234,7 @@ void HGCDigitizerBase<DFr>::runSimpleOnGPU(std::unique_ptr<HGCDigitizerBase::DCo
 
   auto endGPU = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds_GPU = endGPU-startGPU;
-  std::cout << "==>>> GPU time (s) " << elapsed_seconds_GPU.count() << std::endl;
+  std::cout << " GPU time (s) " << elapsed_seconds_GPU.count() << std::endl;
 
   updateOutput(validIds, h_rawData, coll);
 }

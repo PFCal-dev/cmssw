@@ -12,29 +12,39 @@ void addNoise(const int n, const float* cellCharge, const float* cellToa, const 
 {
   for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) //protection
   {
-   float rawCharge(cellCharge[i]);
-   float toa(cellToa[i]);
-   float randNum(rand[i]);
-   uint16_t type(cellType[i]);
 
-   constexpr float noise[3] = {0.168,0.336,0.256};
+    int ii = 0;
+    float volatile sqroot = 0;
+    while(ii<5e2)
+    {
+      ++ii;
+      sqroot = sqrt(ii);
+    }
+    (void)sqroot;
 
-   if(weightMode && rawCharge>0)
-     toa = toa/rawCharge;
+    float rawCharge(cellCharge[i]);
+    float toa(cellToa[i]);
+    float randNum(rand[i]);
+    uint16_t type(cellType[i]);
 
-   float totalCharge = rawCharge;
-   totalCharge += randNum*noise[type];
-   if(totalCharge<0.f) totalCharge=0.f;
+    constexpr float noise[3] = {0.168,0.336,0.256};
 
-   constexpr float inv_lsb = 1./0.0977;
-   constexpr float inv_time_lsb = 1./0.0244;
-   bool passThr=(totalCharge>0.672f);
-   uint16_t finalCharge=(uint16_t)(fminf( totalCharge, 100.f)*inv_lsb);
-   uint16_t finalToA=(uint16_t)(toa*inv_time_lsb);
+    if(weightMode && rawCharge>0)
+      toa = toa/rawCharge;
 
-   word[i] = ( (passThr<<31) |
-             ((finalToA & 0x3ff) <<13) |
-             ((finalCharge & 0xfff)));
+    float totalCharge = rawCharge;
+    totalCharge += randNum*noise[type];
+    if(totalCharge<0.f) totalCharge=0.f;
+
+    constexpr float inv_lsb = 1./0.0977;
+    constexpr float inv_time_lsb = 1./0.0244;
+    bool passThr=(totalCharge>0.672f);
+    uint16_t finalCharge=(uint16_t)(fminf( totalCharge, 100.f)*inv_lsb);
+    uint16_t finalToA=(uint16_t)(toa*inv_time_lsb);
+
+    word[i] = ( (passThr<<31) |
+              ((finalToA & 0x3ff) <<13) |
+              ((finalCharge & 0xfff)));
 
   }
 }

@@ -81,7 +81,7 @@ process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
         dataTier = cms.untracked.string('GEN-SIM'),
         filterName = cms.untracked.string('')
     ),
-    fileName = cms.untracked.string('Events.root'),
+    fileName = cms.untracked.string('Events_'+str(options.pileup)+'.root'),
     outputCommands = cms.untracked.vstring('keep *_*_*_*',
                                             'drop *_mix_*_*',
                                             'keep *_*_*GPU*_*'
@@ -157,8 +157,16 @@ process.hgcalTupleHGCDigisGPU = process.hgcalTupleHGCDigis.clone(  source = cms.
         Prefix = cms.untracked.string  ("GPUHGCDigi")
 )
 
+process.hgcalTupleHGCDigisGPUTwo = process.hgcalTupleHGCDigis.clone(  source = cms.untracked.VInputTag(
+        cms.untracked.InputTag("mix","HGCDigisEEGPUTwo"),
+        cms.untracked.InputTag("mix","HGCDigisHEfrontGPUTwo"),
+        cms.untracked.InputTag("simHGCalUnsuppressedDigis","HEback")
+        ),
+        Prefix = cms.untracked.string  ("GPUTwoHGCDigi")
+)
+
 process.TFileService = cms.Service("TFileService",
-                                   fileName = cms.string("muGun_NTU.root")
+                                   fileName = cms.string("Ntu_"+str(options.pileup)+".root")
 )
 process.ntu = cms.Sequence(
     process.hgcalTupleEvent*
@@ -166,6 +174,7 @@ process.ntu = cms.Sequence(
     #process.hgcalTupleHGCSimHits*
     process.hgcalTupleHGCDigis*
     process.hgcalTupleHGCDigisGPU*
+    #process.hgcalTupleHGCDigisGPUTwo*
     process.hgcalTupleTree
 )
 process.ntu_path = cms.Path(
@@ -181,8 +190,18 @@ cehOnGPU=process.mix.digitizers.hgchefrontDigitizer.clone(digitizationType  = cm
                                                           digiCollection    = cms.string("HGCDigisHEfrontGPU")
                                                           );
 
+ceeOnGPUTwo=process.mix.digitizers.hgceeDigitizer.clone(digitizationType  = cms.uint32(1),
+                                                     digiCollection    = cms.string("HGCDigisEEGPUTwo")
+                                                     );
+cehOnGPUTwo=process.mix.digitizers.hgchefrontDigitizer.clone(digitizationType  = cms.uint32(1),
+                                                          digiCollection    = cms.string("HGCDigisHEfrontGPUTwo")
+                                                          );
+
+
 process.theDigitizersValid.ceeDigitizerOnGPU =cms.PSet( ceeOnGPU )
 process.theDigitizersValid.cehDigitizerOnGPU =cms.PSet( cehOnGPU )
+#process.theDigitizersValid.ceeDigitizerOnGPUTwo =cms.PSet( ceeOnGPUTwo )
+#process.theDigitizersValid.cehDigitizerOnGPUTwo =cms.PSet( cehOnGPUTwo )
 
 process.mix.digitizers = cms.PSet(process.theDigitizersValid)
 
