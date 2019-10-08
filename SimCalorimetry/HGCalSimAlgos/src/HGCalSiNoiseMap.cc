@@ -1,7 +1,7 @@
 #include "SimCalorimetry/HGCalSimAlgos/interface/HGCalSiNoiseMap.h"
 
 //
-HGCalSiNoiseMap::HGCalSiNoiseMap() : encpScale_(840.), encCommonNoiseSub_(1.25), qe2fc_(1.60217646E-4) {
+HGCalSiNoiseMap::HGCalSiNoiseMap() : encpScale_(840.), encCommonNoiseSub_(sqrt(1.25)), qe2fc_(1.60217646E-4) {
   encsParam_.push_back({636., 15.6, 0.0328});  //q80fC
   maxADCPerGain_.push_back(80.);
   encsParam_.push_back({1045., 8.74, 0.0685});  //q160fC
