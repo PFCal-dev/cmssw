@@ -68,13 +68,7 @@ void HGCalConcentratorProcessorSelection::run(const edm::Handle<l1t::HGCalTrigge
     std::vector<l1t::HGCalTriggerCell> trigCellVecOutput;
     std::vector<l1t::HGCalTriggerCell> trigCellVecCoarsened;
 
-    int thickness = 0;
-
-    if (triggerTools_.isSilicon(module_trigcell.second.at(0).detId())) {
-      thickness = triggerTools_.thicknessIndex(module_trigcell.second.at(0).detId(), true);
-    } else if (triggerTools_.isScintillator(module_trigcell.second.at(0).detId())) {
-      thickness = HGCalTriggerTools::kScintillatorPseudoThicknessIndex_;
-    }
+    int thickness = triggerTools_.thicknessIndex(module_trigcell.second.at(0).detId(), true);
 
     HGCalTriggerTools::SubDetectorType subdet = triggerTools_.getSubDetectorType(module_trigcell.second.at(0).detId());
 
