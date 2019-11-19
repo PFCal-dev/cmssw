@@ -2,7 +2,7 @@
 
 HGCalConcentratorSuperTriggerCellImpl::HGCalConcentratorSuperTriggerCellImpl(const edm::ParameterSet& conf)
     : fixedDataSizePerHGCROC_(conf.getParameter<bool>("fixedDataSizePerHGCROC")),
-      coarsenTriggerCells_(conf.getParameter<bool>("coarsenTriggerCells")),
+      coarsenTriggerCells_(conf.getParameter<std::vector<unsigned>>("coarsenTriggerCells")),
       coarseTCmapping_(conf.getParameter<std::vector<unsigned>>("ctcSize")),
       superTCmapping_(conf.getParameter<std::vector<unsigned>>("stcSize")),
       calibration_(conf.getParameterSet("superTCCalibration")),
@@ -38,11 +38,12 @@ void HGCalConcentratorSuperTriggerCellImpl::createAllTriggerCells(
   for (auto& s : STCs) {
     std::vector<uint32_t> output_ids = superTCmapping_.getConstituentTriggerCells(s.second.getSTCId());
 
+    HGCalTriggerTools::SubDetectorType subdet = triggerTools_.getSubDetectorType(output_ids.at(0));
     int thickness = (!output_ids.empty() ? triggerTools_.thicknessIndex(output_ids.at(0), true) : 0);
 
     for (const auto& id : output_ids) {
-      if (fixedDataSizePerHGCROC_ && thickness > kHighDensityThickness_ &&
-          id != coarseTCmapping_.getRepresentativeDetId(id)) {
+      if (((fixedDataSizePerHGCROC_ && thickness > kHighDensityThickness_) || coarsenTriggerCells_[subdet]) &&
+          (id != coarseTCmapping_.getRepresentativeDetId(id))) {
         continue;
       }
 
@@ -70,9 +71,7 @@ void HGCalConcentratorSuperTriggerCellImpl::createAllTriggerCells(
           continue;
         }
       }
-
       trigCellVecOutput.push_back(triggerCell);
-
       if (energyDivisionType_ == oneBitFraction) {  //Get the 1 bit fractions
 
         if (id != s.second.getMaxId()) {
@@ -82,7 +81,6 @@ void HGCalConcentratorSuperTriggerCellImpl::createAllTriggerCells(
       }
     }
   }
-
   // assign energy
   for (l1t::HGCalTriggerCell& tc : trigCellVecOutput) {
     const auto& stc = STCs[superTCmapping_.getCoarseTriggerCellId(tc.detId())];
@@ -95,10 +93,11 @@ void HGCalConcentratorSuperTriggerCellImpl::assignSuperTriggerCellEnergyAndPosit
   //Compress and recalibrate STC energy
   uint32_t compressed_value = getCompressedSTCEnergy(stc);
 
+  HGCalTriggerTools::SubDetectorType subdet = triggerTools_.getSubDetectorType(c.detId());
   int thickness = triggerTools_.thicknessIndex(c.detId(), true);
 
   GlobalPoint point;
-  if ((fixedDataSizePerHGCROC_ && thickness > kHighDensityThickness_) || coarsenTriggerCells_) {
+  if ((fixedDataSizePerHGCROC_ && thickness > kHighDensityThickness_) || coarsenTriggerCells_[subdet]) {
     point = coarseTCmapping_.getCoarseTriggerCellPosition(coarseTCmapping_.getCoarseTriggerCellId(c.detId()));
   } else {
     point = triggerTools_.getTCPosition(c.detId());
@@ -118,7 +117,7 @@ void HGCalConcentratorSuperTriggerCellImpl::assignSuperTriggerCellEnergyAndPosit
     }
   } else if (energyDivisionType_ == equalShare) {
     double coarseTriggerCellSize =
-        coarsenTriggerCells_
+        coarsenTriggerCells_[subdet]
             ? double(
                   coarseTCmapping_.getConstituentTriggerCells(coarseTCmapping_.getCoarseTriggerCellId(stc.getMaxId()))
                       .size())
