@@ -81,6 +81,15 @@ public:
   DetId simToReco(const DetId&, const HcalTopology&) const;
   unsigned triggerLayer(const unsigned id) const { return geom_->triggerLayer(id); }
 
+  static constexpr unsigned kScintillatorPseudoThicknessIndex_ = 3;
+
+  enum SubDetectorType {
+    hgcal_silicon_CEE,
+    hgcal_silicon_CEH,
+    hgcal_scintillator,
+  };
+  SubDetectorType getSubDetectorType(const DetId& id) const;
+
 private:
   const HGCalTriggerGeometryBase* geom_;
   unsigned eeLayers_;
