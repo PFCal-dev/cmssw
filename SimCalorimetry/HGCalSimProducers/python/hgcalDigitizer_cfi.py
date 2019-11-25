@@ -91,7 +91,7 @@ hgceeDigitizer = cms.PSet(
         noise_fC         = cms.PSet(refToPSet_ = cms.string("HGCAL_noise_fC")),
         doTimeSamples    = cms.bool(False),
         thresholdFollowsMIP = cms.bool(thresholdTracksMIP),
-        feCfg   = cms.Pset(refToPset_ = cms.string("hgcROCSettings"))
+        feCfg   = cms.PSet(refToPset_ = cms.string("hgcROCSettings"))
     )
 )
 
@@ -120,7 +120,7 @@ hgchefrontDigitizer = cms.PSet(
         noise_fC         = cms.PSet(refToPSet_ = cms.string("HGCAL_noise_fC")),
         doTimeSamples    = cms.bool(False),
         thresholdFollowsMIP        = cms.bool(thresholdTracksMIP),
-        feCfg   = cms.Pset(refToPset_ = cms.string("hgcROCSettings"))
+        feCfg   = cms.PSet(refToPset_ = cms.string("hgcROCSettings"))
     )
 )
 
@@ -155,7 +155,7 @@ hgchebackDigitizer = cms.PSet(
         xTalk     = cms.double(0.01),
         sdPixels  = cms.double(1e-6), # this is additional photostatistics noise (as implemented), not sure why it's here...
         thresholdFollowsMIP = cms.bool(thresholdTracksMIP),
-        feCfg   = cms.Pset(refToPset_ = cms.string("hgcROCSettingsForHEback"))
+        feCfg   = cms.PSet(refToPset_ = cms.string("hgcROCSettingsForHEback"))
     )
 )
 
@@ -185,7 +185,7 @@ hfnoseDigitizer = cms.PSet(
         noise_fC         = cms.PSet(refToPSet_ = cms.string("HGCAL_noise_fC")),
         doTimeSamples    = cms.bool(False),
         thresholdFollowsMIP        = cms.bool(thresholdTracksMIP),
-        feCfg   = cms.Pset(refToPset_ = cms.string("hgcROCSettings"))
+        feCfg   = cms.PSet(refToPset_ = cms.string("hgcROCSettings"))
     )
 )
 
