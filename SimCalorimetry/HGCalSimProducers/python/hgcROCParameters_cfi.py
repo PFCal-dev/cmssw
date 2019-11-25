@@ -43,3 +43,13 @@ hgcROCSettings = cms.PSet(
         -0.28,   27.14,  43.95,
         3.89048 )
 )
+
+hgcROCSettingsForHEback = hgcROCSettings.clone( adcNbits        = cms.uint32(10),      #two bits less (uniform with the silicon)
+                                                adcSaturation_fC = cms.double(68.75),  #one quarter value of pre12
+                                                tdcSaturation_fC  = cms.double(1000),  #allow up to 1000 MIPs
+                                                targetMIPvalue_ADC   = cms.uint32(15), #to be used for HGCROC gain proposal
+                                                adcThreshold_fC = cms.double(0.5),     #unchanged with respect to pre12
+                                                tdcOnset_fC       = cms.double(55),    #turn TDC when 80% of the ADC range is reached (one quarter of pre12
+                                                #                                       indicative at this point)
+                                                tdcForToAOnset_fC = cms.vdouble(12.,12.,12.),  #turn ToA for 20% of the TDC threshold (indicative at this point)
+                                            )
