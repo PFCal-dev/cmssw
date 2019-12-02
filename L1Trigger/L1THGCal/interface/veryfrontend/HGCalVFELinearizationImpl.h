@@ -29,6 +29,7 @@ private:
   uint32_t linnBits_;
   double tdcLSB_;
   uint32_t linMax_;
+  std::vector<double> oot_coefficients_;
 };
 
 #endif
