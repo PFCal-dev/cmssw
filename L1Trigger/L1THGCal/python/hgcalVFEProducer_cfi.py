@@ -42,6 +42,7 @@ vfe_proc = cms.PSet( ProcessorName = cms.string('HGCalVFEProcessorSums'),
                      adcnBits = adcNbits,
                      tdcsaturation = tdcSaturation_fC,
                      linnBits = cms.uint32(16),
+                     oot_coefficients = cms.vdouble(0., 0.), # (bx-2, bx-1)
                      siliconCellLSB_fC =  cms.double( triggerCellLsbBeforeCompression*(2**triggerCellTruncationBits) ),
                      scintillatorCellLSB_MIP = cms.double(float(adcSaturationBH_MIP.value())/(2**float(adcNbitsBH.value()))),
                      # cell thresholds before TC sums
