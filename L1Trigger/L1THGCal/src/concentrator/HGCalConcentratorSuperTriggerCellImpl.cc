@@ -37,7 +37,7 @@ void HGCalConcentratorSuperTriggerCellImpl::createAllTriggerCells(
     std::unordered_map<unsigned, SuperTriggerCell>& STCs, std::vector<l1t::HGCalTriggerCell>& trigCellVecOutput) const {
   for (auto& s : STCs) {
     std::vector<uint32_t> output_ids = superTCmapping_.getConstituentTriggerCells(s.second.getSTCId());
-    if(output_ids.empty())
+    if (output_ids.empty())
       continue;
 
     HGCalTriggerTools::SubDetectorType subdet = triggerTools_.getSubDetectorType(output_ids.at(0));
