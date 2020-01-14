@@ -19,7 +19,12 @@ HGCalSiNoiseMap::HGCalSiNoiseMap()
   for (auto i : chargeAtFullScaleADCPerGain_)
     lsbPerGain_.push_back(i / 1024.);
 
-  //fine sensors: 120 mum -  67: MPV of charge[number of e-]/mum for a mip in silicon; srouce PDG
+  //init sensor information
+  mipEqfC_.resize(3);
+  cellCapacitance_.resize(3);
+  cellVolume_.resize(3);
+
+  //fine sensors: 120 mum -  67: MPV of charge[number of e-]/mum for a mip in silicon; source PDG
   const double mipEqfC_120 = 120. * 67. * qe2fc_;
   mipEqfC_[0] = mipEqfC_120;
   const double cellCapacitance_120 = 50;
@@ -62,11 +67,31 @@ HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteris
   SiCellOpCharacteristics siop;
 
   //decode cell properties
-  int layer(cellId.layer());
   unsigned int cellThick = cellId.type();
   double cellCap(cellCapacitance_[cellThick]);
   double cellVol(cellVolume_[cellThick]);
+  int subdet(cellId.subdet());
+  int layer(cellId.layer());
 
+  auto xy(ddd()->locateCell(layer, cellId.waferU(), cellId.waferV(), cellId.cellU(), cellId.cellV(), true, true));
+  double x(xy.first);
+  double y(xy.second);
+
+  return getSiCellOpCharacteristics(subdet,layer,x,y,gain,aimMIPtoADC,cellThick,cellCap,cellVol);
+}
+
+//
+HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteristics(int &subdet,
+                                                                                     int &layer,
+                                                                                     double &x,
+                                                                                     double &y,
+                                                                                     GainRange_t &gain,
+                                                                                     int &aimMIPtoADC,                                                                                     
+                                                                                     unsigned int &cellThick,
+                                                                                     double &cellCap,
+                                                                                     double &cellVol) {
+  SiCellOpCharacteristics siop;
+  
   //leakage current and CCE [muA]
   if (ignoreFluence_) {
     siop.fluence = 0;
@@ -81,15 +106,12 @@ HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteris
     }
 
     //compute the radius here
-    auto xy(ddd()->locateCell(
-        cellId.layer(), cellId.waferU(), cellId.waferV(), cellId.cellU(), cellId.cellV(), true, true));
-    double radius2 = std::pow(xy.first, 2) + std::pow(xy.second, 2);  //in cm
-
+    double radius2 = std::pow(x, 2) + std::pow(y, 2);  //in cm
     double radius = sqrt(radius2);
     double radius3 = radius * radius2;
     double radius4 = pow(radius2, 2);
     radiiVec radii{{radius, radius2, radius3, radius4, 0., 0., 0., 0.}};
-    siop.fluence = getFluenceValue(cellId.subdet(), layer, radii);
+    siop.fluence = getFluenceValue(subdet, layer, radii);
     siop.lnfluence = log(siop.fluence);
     siop.ileak = exp(ileakParam_[0] * siop.lnfluence + ileakParam_[1]) * cellVol * unitToMicro_;
 

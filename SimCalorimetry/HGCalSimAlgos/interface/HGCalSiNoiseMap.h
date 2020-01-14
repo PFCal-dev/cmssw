@@ -43,6 +43,18 @@ public:
   }
 
   /**
+     @short this method enables one to add other Si types on top of the standard ones (use if you know what you are doing)
+   */
+  void addSiType(const double &mipEqfC, const double &cellCap, const double & cellVol, const std::vector<double> &ccePars) {
+
+    mipEqfC_.push_back(mipEqfC);
+    cellCapacitance_.push_back(cellCap);
+    cellVolume_.push_back(cellVol);
+    cceParam_.push_back(ccePars);
+  }
+
+
+  /**
      @short overrides base class method with specifics for the configuration of the algo
   */
   void setDoseMap(const std::string &, const unsigned int &);
@@ -55,9 +67,23 @@ public:
                                                      GainRange_t gain = GainRange_t::AUTO,
                                                      int aimMIPtoADC = 10);
 
-  std::array<double, 3> &getMipEqfC() { return mipEqfC_; }
-  std::array<double, 3> &getCellCapacitance() { return cellCapacitance_; }
-  std::array<double, 3> &getCellVolume() { return cellVolume_; }
+  /**
+     @short the working horse method to return the Si operation characteristics
+     (doesn't have knowledge about the geometry or detIds)
+   */
+  SiCellOpCharacteristics getSiCellOpCharacteristics(int &subdet,
+                                                     int &layer,
+                                                     double &x,
+                                                     double &y,
+                                                     GainRange_t &gain,
+                                                     int &aimMIPtoADC,                                                                                     
+                                                     unsigned int &cellThick,
+                                                     double &cellCap,
+                                                     double &cellVol);
+
+  std::vector<double> &getMipEqfC() { return mipEqfC_; }
+  std::vector<double> &getCellCapacitance() { return cellCapacitance_; }
+  std::vector<double> &getCellVolume() { return cellVolume_; }
   std::vector<std::vector<double> > &getCCEParam() { return cceParam_; }
   std::vector<double> &getIleakParam() { return ileakParam_; }
   std::vector<std::vector<double> > &getENCsParam() { return encsParam_; }
@@ -66,7 +92,7 @@ public:
 
 private:
   //vector of three params, per sensor type: 0:120 [mum], 1:200, 2:300
-  std::array<double, 3> mipEqfC_, cellCapacitance_, cellVolume_;
+  std::vector<double> mipEqfC_, cellCapacitance_, cellVolume_;
   std::vector<std::vector<double> > cceParam_;
 
   //leakage current/volume vs fluence
