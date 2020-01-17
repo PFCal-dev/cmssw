@@ -59,13 +59,33 @@ void HGCalSiNoiseMap::setDoseMap(const std::string &fullpath, const unsigned int
 HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteristics(const HGCSiliconDetId &cellId,
                                                                                      GainRange_t gain,
                                                                                      int aimMIPtoADC) {
-  SiCellOpCharacteristics siop;
 
   //decode cell properties
   int layer(cellId.layer());
   unsigned int cellThick = cellId.type();
   double cellCap(cellCapacitance_[cellThick]);
   double cellVol(cellVolume_[cellThick]);
+  double mipEqfC(mipEqfC_[cellThick]);
+
+  //location of the cell
+  int subdet(cellId.subdet());
+  std::vector<double> &cceParam=cceParam_[cellThick];
+  auto xy(ddd()->locateCell(cellId.layer(), cellId.waferU(), cellId.waferV(), cellId.cellU(), cellId.cellV(), true, true));
+  double radius2 = std::pow(xy.first, 2) + std::pow(xy.second, 2);  //in cm
+  
+  //call baseline method
+  return getSiCellOpCharacteristics(cellCap,cellVol,mipEqfC,cceParam,
+                                    subdet,layer,radius2,
+                                    gain,aimMIPtoADC);
+}
+
+
+//
+HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteristics(double &cellCap, double &cellVol, double &mipEqfC, std::vector<double> &cceParam,
+                                                                                     int &subdet, int &layer, double &radius2,
+                                                                                     GainRange_t &gain,
+                                                                                     int &aimMIPtoADC) {
+  SiCellOpCharacteristics siop;
 
   //leakage current and CCE [muA]
   if (ignoreFluence_) {
@@ -81,15 +101,11 @@ HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteris
     }
 
     //compute the radius here
-    auto xy(ddd()->locateCell(
-        cellId.layer(), cellId.waferU(), cellId.waferV(), cellId.cellU(), cellId.cellV(), true, true));
-    double radius2 = std::pow(xy.first, 2) + std::pow(xy.second, 2);  //in cm
-
     double radius = sqrt(radius2);
     double radius3 = radius * radius2;
     double radius4 = pow(radius2, 2);
     radiiVec radii{{radius, radius2, radius3, radius4, 0., 0., 0., 0.}};
-    siop.fluence = getFluenceValue(cellId.subdet(), layer, radii);
+    siop.fluence = getFluenceValue(subdet, layer, radii);
     siop.lnfluence = log(siop.fluence);
     siop.ileak = exp(ileakParam_[0] * siop.lnfluence + ileakParam_[1]) * cellVol * unitToMicro_;
 
@@ -98,17 +114,16 @@ HGCalSiNoiseMap::SiCellOpCharacteristics HGCalSiNoiseMap::getSiCellOpCharacteris
     } else {
       //lin+log parametrization
       //cceParam_ are parameters as defined in equation (2) of DN-19-045
-      siop.cce = siop.fluence <= cceParam_[cellThick][0] ? 1. + cceParam_[cellThick][1] * siop.fluence
-                                                         : (1. - cceParam_[cellThick][2] * siop.lnfluence) +
-                                                               (cceParam_[cellThick][1] * cceParam_[cellThick][0] +
-                                                                cceParam_[cellThick][2] * log(cceParam_[cellThick][0]));
+      siop.cce = (siop.fluence <= cceParam[0]) ? 
+        1. + cceParam[1] * siop.fluence
+        : (1. - cceParam[2] * siop.lnfluence) + (cceParam[1] * cceParam[0] + cceParam[2] * log(cceParam[0]));
       siop.cce = std::max(0., siop.cce);
     }
   }
 
   //determine the gain to apply accounting for cce
   //move computation to ROC level (one day)
-  double S(siop.cce * mipEqfC_[cellThick]);
+  double S(siop.cce * mipEqfC);
   if (gain == GainRange_t::AUTO) {
     double desiredLSB(S / aimMIPtoADC);
     std::vector<double> diffToPhysLSB = {fabs(desiredLSB - lsbPerGain_[GainRange_t::q80fC]),

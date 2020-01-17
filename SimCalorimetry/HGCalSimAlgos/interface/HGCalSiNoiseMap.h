@@ -55,6 +55,14 @@ public:
                                                      GainRange_t gain = GainRange_t::AUTO,
                                                      int aimMIPtoADC = 10);
 
+  /**
+     @short baseline method to compute the charge collection efficiency
+     can be used independently of the DetId/HGCalGeometry if all variables are known
+   */
+  SiCellOpCharacteristics getSiCellOpCharacteristics(double &cellCap, double &cellVol, double &mipEqfC, std::vector<double> &cceParam,
+                                                     int &subdet, int &layer, double &radius2,
+                                                     GainRange_t &gain, int &aimMIPtoADC);
+
   std::array<double, 3> &getMipEqfC() { return mipEqfC_; }
   std::array<double, 3> &getCellCapacitance() { return cellCapacitance_; }
   std::array<double, 3> &getCellVolume() { return cellVolume_; }
