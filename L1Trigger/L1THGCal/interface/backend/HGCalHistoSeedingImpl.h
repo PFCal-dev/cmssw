@@ -149,6 +149,8 @@ private:
 
   unsigned nBins1_ = 42;
   unsigned nBins2_ = 216;
+  std::vector<unsigned> vnBins1_;
+  std::vector<unsigned> vnBins2_;
   std::vector<unsigned> binsSumsHisto_;
   double histoThreshold_ = 20.;
   std::vector<double> neighbour_weights_;
@@ -159,8 +161,10 @@ private:
   Navigator navigator_;
 
   static constexpr unsigned neighbour_weights_size_ = 9;
-  const double kROverZMin_ = 0.076;
-  const double kROverZMax_ = 0.58;
+  double kROverZMin_ = 0.076;
+  double kROverZMax_ = 0.58;
+  std::vector<double> vkROverZMin_;
+  std::vector<double> vkROverZMax_;
 
   static constexpr double kXYMax_ = 0.6;
 };

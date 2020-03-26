@@ -22,6 +22,10 @@ FH_DR_GROUP = 6
 BH_DR_GROUP = 12
 MAX_LAYERS = 52
 
+nBins_X1_histo_multiclusterRPhi = cms.vuint32(42, 42)
+nBins_X2_histo_multiclusterRPhi = cms.vuint32(216, 108)
+kROverZMinRPhi=cms.vdouble(0.076, 0.224)
+kROverZMaxRPhi=cms.vdouble(0.224, 0.58)
 
 dr_layerbylayer = ([0] + # no layer 0
         [0.015]*EE_DR_GROUP + [0.020]*EE_DR_GROUP + [0.030]*EE_DR_GROUP + [0.040]*EE_DR_GROUP + # EM
@@ -76,11 +80,11 @@ dbscan_C3d_params = cms.PSet(type_multicluster=cms.string('DBSCANC3d'),
 
 
 histoMax_C3d_seeding_params = cms.PSet(type_histoalgo=cms.string('HistoMaxC3d'),
-                               nBins_X1_histo_multicluster=cms.uint32(42), # bin size of about 0.012
-                               nBins_X2_histo_multicluster=cms.uint32(216), # bin size of about 0.029
+                               nBins_X1_histo_multicluster=nBins_X1_histo_multiclusterRPhi, 
+                               nBins_X2_histo_multicluster=nBins_X2_histo_multiclusterRPhi,
                                binSumsHisto=binSums,
-                               kROverZMin=cms.double(0.076),
-                               kROverZMax=cms.double(0.58),
+                               kROverZMin=kROverZMinRPhi,
+                               kROverZMax=kROverZMaxRPhi,
                                threshold_histo_multicluster=cms.double(10.),
                                neighbour_weights=neighbour_weights_1stOrder,
                                seed_position=cms.string("TCWeighted"),#BinCentre, TCWeighted
