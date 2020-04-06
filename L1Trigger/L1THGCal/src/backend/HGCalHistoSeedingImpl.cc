@@ -13,8 +13,8 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
       neighbour_weights_(conf.getParameter<std::vector<double>>("neighbour_weights")),
       smoothing_ecal_(conf.getParameter<std::vector<double>>("seed_smoothing_ecal")),
       smoothing_hcal_(conf.getParameter<std::vector<double>>("seed_smoothing_hcal")),
-      vkROverZMin_(conf.getParameter<std::vector<double>>("kROverZMin")),
-      vkROverZMax_(conf.getParameter<std::vector<double>>("kROverZMax")) {
+      vROverZMin_(conf.getParameter<std::vector<double>>("ROverZMin")),
+      vROverZMax_(conf.getParameter<std::vector<double>>("ROverZMax")) {
   if (seedingAlgoType_ == "HistoMaxC3d") {
     seedingType_ = HistoMaxC3d;
   } else if (seedingAlgoType_ == "HistoSecondaryMaxC3d") {
@@ -35,29 +35,10 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
     throw cms::Exception("HGCTriggerParameterError")
         << "Unknown Seed Position option '" << conf.getParameter<std::string>("seed_position");
   }
-  if (conf.getParameter<std::string>("seeding_space") == "RPhi") {
-    seedingSpace_ = RPhi;
-    navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Circular);
-  } else if (conf.getParameter<std::string>("seeding_space") == "XY") {
-    seedingSpace_ = XY;
-    navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Bounded);
-  } else {
-    throw cms::Exception("HGCTriggerParameterError")
-        << "Unknown seeding space  '" << conf.getParameter<std::string>("seeding_space");
-  }
 
   edm::LogInfo("HGCalMulticlusterParameters")
-      << "\nMulticluster number of X1-bins for the histo algorithm: " << nBins1_
-      << "\nMulticluster number of X2-bins for the histo algorithm: " << nBins2_
       << "\nMulticluster MIPT threshold for histo threshold algorithm: " << histoThreshold_
       << "\nMulticluster type of multiclustering algortihm: " << seedingAlgoType_;
-
-  if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
-      nBins1_ != binsSumsHisto_.size()) {
-    throw cms::Exception("Inconsistent bin size")
-        << "Inconsistent nBins_X1_histo_multicluster ( " << nBins1_ << " ) and binSumsHisto ( " << binsSumsHisto_.size()
-        << " ) size in HGCalMulticlustering\n";
-  }
 
   if (neighbour_weights_.size() != neighbour_weights_size_) {
     throw cms::Exception("Inconsistent vector size")
@@ -165,8 +146,8 @@ HGCalHistoSeedingImpl::Histogram HGCalHistoSeedingImpl::fillSmoothPhiHistoCluste
   for (int z_side : {-1, 1}) {
     for (unsigned bin1 = 0; bin1 < nBins1_; bin1++) {
       int nBinsSide = (binSums[bin1] - 1) / 2;
-      float R1 = kROverZMin_ + bin1 * (kROverZMax_ - kROverZMin_);
-      float R2 = R1 + (kROverZMax_ - kROverZMin_);
+      float R1 = ROverZMin_ + bin1 * (ROverZMax_ - ROverZMin_);
+      float R2 = R1 + (ROverZMax_ - ROverZMin_);
       double area =
           0.5 * (pow(R2, 2) - pow(R1, 2)) *
           (1 +
@@ -517,12 +498,19 @@ std::vector<std::pair<GlobalPoint, double>> HGCalHistoSeedingImpl::computeSecond
 void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCalCluster>>& clustersPtrs,
                                            std::vector<std::pair<GlobalPoint, double>>& seedPositionsEnergy) {
 
-  for(std::vector<unsigned>::size_type it = 0; it != vnBins1_.size(); it++) {
+  for(size_t it = 0; it != vnBins1_.size(); it++) {
 
     nBins1_ = vnBins1_[it];
     nBins2_ = vnBins2_[it];
-    kROverZMin_ = vkROverZMin_[it];
-    kROverZMax_ = vkROverZMax_[it];
+    ROverZMin_ = vROverZMin_[it];
+    ROverZMax_ = vROverZMax_[it];
+
+    if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
+	nBins1_ != binsSumsHisto_.size()) {
+      throw cms::Exception("Inconsistent bin size")
+        << "Inconsistent nBins_X1_histo_multicluster ( " << nBins1_ << " ) and binSumsHisto ( " << binsSumsHisto_.size()
+        << " ) size in HGCalMulticlustering\n";
+    }
 
     /* put clusters into an r/z x phi histogram */
     Histogram histoCluster = fillHistoClusters(clustersPtrs);
@@ -530,7 +518,7 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
     Histogram smoothHistoCluster;
     if (seedingSpace_ == RPhi) {
 
-      navigator_ = Navigator(vnBins1_[it], Navigator::AxisType::Bounded, vnBins2_[it], Navigator::AxisType::Circular); 
+      navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Circular); 
 
      /* smoothen along the phi direction + normalize each bin to same area */
       Histogram smoothPhiHistoCluster = fillSmoothPhiHistoClusters(histoCluster, binsSumsHisto_);
@@ -538,35 +526,47 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
       /* smoothen along the r/z direction */
       smoothHistoCluster = fillSmoothRPhiHistoClusters(smoothPhiHistoCluster);
     } else if (seedingSpace_ == XY) {
+
+      navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Circular); 
+      
       smoothHistoCluster = fillSmoothHistoClusters(histoCluster, smoothing_ecal_, Bin::Content::Ecal);
       smoothHistoCluster = fillSmoothHistoClusters(smoothHistoCluster, smoothing_hcal_, Bin::Content::Hcal);
       // Update sum with smoothen ECAL + HCAL
       for (int z_side : {-1, 1}) {
-	for (unsigned x1 = 0; x1 < nBins1_; x1++) {
-	  for (unsigned x2 = 0; x2 < nBins2_; x2++) {
-	    auto& bin = smoothHistoCluster.at(z_side, x1, x2);
-	    bin.values[Bin::Content::Sum] = bin.values[Bin::Content::Ecal] + bin.values[Bin::Content::Hcal];
-	  }
-	}
+        for (unsigned x1 = 0; x1 < nBins1_; x1++) {
+          for (unsigned x2 = 0; x2 < nBins2_; x2++) {
+            auto& bin = smoothHistoCluster.at(z_side, x1, x2);
+            bin.values[Bin::Content::Sum] = bin.values[Bin::Content::Ecal] + bin.values[Bin::Content::Hcal];
+          }
+        }
       }
     }
-    
-  /* seeds determined with local maximum criteria */
-  if (seedingType_ == HistoMaxC3d)
-    seedPositionsEnergy = computeMaxSeeds(smoothHistoCluster);
-  else if (seedingType_ == HistoThresholdC3d)
-    seedPositionsEnergy = computeThresholdSeeds(smoothHistoCluster);
-  else if (seedingType_ == HistoInterpolatedMaxC3d)
-    seedPositionsEnergy = computeInterpolatedMaxSeeds(smoothHistoCluster);
-  else if (seedingType_ == HistoSecondaryMaxC3d)
-    seedPositionsEnergy = computeSecondaryMaxSeeds(smoothHistoCluster);
+
+    /* seeds determined with local maximum criteria */
+    std::vector<std::pair<GlobalPoint, double>> tmp_seedPositionsEnergy;
+    if (seedingType_ == HistoMaxC3d) {
+      tmp_seedPositionsEnergy = computeMaxSeeds(smoothHistoCluster);
+      std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::inserter(seedPositionsEnergy, seedPositionsEnergy.end()));
+    }
+    else if (seedingType_ == HistoThresholdC3d) {
+      tmp_seedPositionsEnergy = computeThresholdSeeds(smoothHistoCluster);
+      std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::inserter(seedPositionsEnergy, seedPositionsEnergy.end()));
+    }
+    else if (seedingType_ == HistoInterpolatedMaxC3d) {
+      tmp_seedPositionsEnergy = computeInterpolatedMaxSeeds(smoothHistoCluster);
+      std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::inserter(seedPositionsEnergy, seedPositionsEnergy.end()));
+    }
+    else if (seedingType_ == HistoSecondaryMaxC3d) {
+      tmp_seedPositionsEnergy = computeSecondaryMaxSeeds(smoothHistoCluster);
+      std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::inserter(seedPositionsEnergy, seedPositionsEnergy.end()));
+    }
   }
 }
 
 std::array<double, 4> HGCalHistoSeedingImpl::boundaries() {
   switch (seedingSpace_) {
     case RPhi:
-      return {{kROverZMin_, kROverZMax_, -M_PI, M_PI}};
+      return {{ROverZMin_, ROverZMax_, -M_PI, M_PI}};
     case XY:
       return {{-kXYMax_, kXYMax_, -kXYMax_, kXYMax_}};
   }

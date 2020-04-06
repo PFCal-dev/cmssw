@@ -161,10 +161,10 @@ private:
   Navigator navigator_;
 
   static constexpr unsigned neighbour_weights_size_ = 9;
-  double kROverZMin_ = 0.076;
-  double kROverZMax_ = 0.58;
-  std::vector<double> vkROverZMin_;
-  std::vector<double> vkROverZMax_;
+  double ROverZMin_ = 0.076;
+  double ROverZMax_ = 0.58;
+  std::vector<double> vROverZMin_;
+  std::vector<double> vROverZMax_;
 
   static constexpr double kXYMax_ = 0.6;
 };
