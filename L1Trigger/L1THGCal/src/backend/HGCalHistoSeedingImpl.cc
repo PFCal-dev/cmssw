@@ -527,7 +527,7 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
       smoothHistoCluster = fillSmoothRPhiHistoClusters(smoothPhiHistoCluster);
     } else if (seedingSpace_ == XY) {
 
-      navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Circular); 
+      navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Bounded); 
       
       smoothHistoCluster = fillSmoothHistoClusters(histoCluster, smoothing_ecal_, Bin::Content::Ecal);
       smoothHistoCluster = fillSmoothHistoClusters(smoothHistoCluster, smoothing_hcal_, Bin::Content::Hcal);
