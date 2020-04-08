@@ -35,10 +35,25 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
     throw cms::Exception("HGCTriggerParameterError")
         << "Unknown Seed Position option '" << conf.getParameter<std::string>("seed_position");
   }
+  if (conf.getParameter<std::string>("seeding_space") == "RPhi") {
+    seedingSpace_ = RPhi;
+  } else if (conf.getParameter<std::string>("seeding_space") == "XY") {
+    seedingSpace_ = XY;
+  } else {
+    throw cms::Exception("HGCTriggerParameterError")
+      << "Unknown seeding space  '" << conf.getParameter<std::string>("seeding_space");
+  }
 
   edm::LogInfo("HGCalMulticlusterParameters")
       << "\nMulticluster MIPT threshold for histo threshold algorithm: " << histoThreshold_
       << "\nMulticluster type of multiclustering algortihm: " << seedingAlgoType_;
+
+    if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
+	nBins1_ != binsSumsHisto_.size()) {
+      throw cms::Exception("Inconsistent bin size")
+        << "Inconsistent nBins_X1_histo_multicluster ( " << vnBins1_[0] << " ) and binSumsHisto ( " << binsSumsHisto_.size()
+        << " ) size in HGCalMulticlustering\n";
+    }
 
   if (neighbour_weights_.size() != neighbour_weights_size_) {
     throw cms::Exception("Inconsistent vector size")
@@ -505,13 +520,6 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
     ROverZMin_ = vROverZMin_[it];
     ROverZMax_ = vROverZMax_[it];
 
-    if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
-	nBins1_ != binsSumsHisto_.size()) {
-      throw cms::Exception("Inconsistent bin size")
-        << "Inconsistent nBins_X1_histo_multicluster ( " << nBins1_ << " ) and binSumsHisto ( " << binsSumsHisto_.size()
-        << " ) size in HGCalMulticlustering\n";
-    }
-
     /* put clusters into an r/z x phi histogram */
     Histogram histoCluster = fillHistoClusters(clustersPtrs);
     
@@ -519,10 +527,10 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
     if (seedingSpace_ == RPhi) {
 
       navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Circular); 
-
-     /* smoothen along the phi direction + normalize each bin to same area */
-      Histogram smoothPhiHistoCluster = fillSmoothPhiHistoClusters(histoCluster, binsSumsHisto_);
       
+      /* smoothen along the phi direction + normalize each bin to same area */
+      Histogram smoothPhiHistoCluster = fillSmoothPhiHistoClusters(histoCluster, binsSumsHisto_);
+
       /* smoothen along the r/z direction */
       smoothHistoCluster = fillSmoothRPhiHistoClusters(smoothPhiHistoCluster);
     } else if (seedingSpace_ == XY) {
@@ -546,20 +554,17 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
     std::vector<std::pair<GlobalPoint, double>> tmp_seedPositionsEnergy;
     if (seedingType_ == HistoMaxC3d) {
       tmp_seedPositionsEnergy = computeMaxSeeds(smoothHistoCluster);
-      std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::inserter(seedPositionsEnergy, seedPositionsEnergy.end()));
     }
     else if (seedingType_ == HistoThresholdC3d) {
       tmp_seedPositionsEnergy = computeThresholdSeeds(smoothHistoCluster);
-      std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::inserter(seedPositionsEnergy, seedPositionsEnergy.end()));
     }
     else if (seedingType_ == HistoInterpolatedMaxC3d) {
       tmp_seedPositionsEnergy = computeInterpolatedMaxSeeds(smoothHistoCluster);
-      std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::inserter(seedPositionsEnergy, seedPositionsEnergy.end()));
     }
     else if (seedingType_ == HistoSecondaryMaxC3d) {
       tmp_seedPositionsEnergy = computeSecondaryMaxSeeds(smoothHistoCluster);
-      std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::inserter(seedPositionsEnergy, seedPositionsEnergy.end()));
     }
+    std::copy(tmp_seedPositionsEnergy.begin(), tmp_seedPositionsEnergy.end(), std::back_inserter(seedPositionsEnergy));
   }
 }
 
