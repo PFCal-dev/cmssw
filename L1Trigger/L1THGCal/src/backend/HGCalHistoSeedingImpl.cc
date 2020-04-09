@@ -1,4 +1,4 @@
-#include "L1Trigger/L1THGCal/interface/backend/HGCalHistoSeedingImpl.h"
+1;95;0c#include "L1Trigger/L1THGCal/interface/backend/HGCalHistoSeedingImpl.h"
 #include "L1Trigger/L1THGCal/interface/backend/HGCalShowerShape.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
@@ -48,17 +48,17 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
       << "\nMulticluster MIPT threshold for histo threshold algorithm: " << histoThreshold_
       << "\nMulticluster type of multiclustering algortihm: " << seedingAlgoType_;
 
-    if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
-	nBins1_ != binsSumsHisto_.size()) {
-      throw cms::Exception("Inconsistent bin size")
-        << "Inconsistent nBins_X1_histo_multicluster ( " << vnBins1_[0] << " ) and binSumsHisto ( " << binsSumsHisto_.size()
-        << " ) size in HGCalMulticlustering\n";
-    }
-
+  if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
+      vnBins1_[0] != binsSumsHisto_.size()) {
+    throw cms::Exception("Inconsistent bin size")
+      << "Inconsistent nBins_X1_histo_multicluster ( " << vnBins1_[0] << " ) and binSumsHisto ( " << binsSumsHisto_.size()
+      << " ) size in HGCalMulticlustering\n";
+  }
+  
   if (neighbour_weights_.size() != neighbour_weights_size_) {
     throw cms::Exception("Inconsistent vector size")
-        << "Inconsistent size of neighbour weights vector in HGCalMulticlustering ( " << neighbour_weights_.size()
-        << " ). Should be " << neighbour_weights_size_ << "\n";
+      << "Inconsistent size of neighbour weights vector in HGCalMulticlustering ( " << neighbour_weights_.size()
+      << " ). Should be " << neighbour_weights_size_ << "\n";
   }
 }
 
