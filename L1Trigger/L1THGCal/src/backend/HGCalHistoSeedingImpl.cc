@@ -1,4 +1,4 @@
-1;95;0c#include "L1Trigger/L1THGCal/interface/backend/HGCalHistoSeedingImpl.h"
+#include "L1Trigger/L1THGCal/interface/backend/HGCalHistoSeedingImpl.h"
 #include "L1Trigger/L1THGCal/interface/backend/HGCalShowerShape.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
@@ -8,7 +8,7 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
     : seedingAlgoType_(conf.getParameter<std::string>("type_histoalgo")),
       vnBins1_(conf.getParameter<std::vector<unsigned>>("nBins_X1_histo_multicluster")),
       vnBins2_(conf.getParameter<std::vector<unsigned>>("nBins_X2_histo_multicluster")),
-      binsSumsHisto_(conf.getParameter<std::vector<unsigned>>("binSumsHisto")),
+      binsSumsHistoN_(conf.getParameter<std::vector<unsigned>>("binSumsHisto")),
       histoThreshold_(conf.getParameter<double>("threshold_histo_multicluster")),
       neighbour_weights_(conf.getParameter<std::vector<double>>("neighbour_weights")),
       smoothing_ecal_(conf.getParameter<std::vector<double>>("seed_smoothing_ecal")),
@@ -48,13 +48,6 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
       << "\nMulticluster MIPT threshold for histo threshold algorithm: " << histoThreshold_
       << "\nMulticluster type of multiclustering algortihm: " << seedingAlgoType_;
 
-  if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
-      vnBins1_[0] != binsSumsHisto_.size()) {
-    throw cms::Exception("Inconsistent bin size")
-      << "Inconsistent nBins_X1_histo_multicluster ( " << vnBins1_[0] << " ) and binSumsHisto ( " << binsSumsHisto_.size()
-      << " ) size in HGCalMulticlustering\n";
-  }
-  
   if (neighbour_weights_.size() != neighbour_weights_size_) {
     throw cms::Exception("Inconsistent vector size")
       << "Inconsistent size of neighbour weights vector in HGCalMulticlustering ( " << neighbour_weights_.size()
@@ -527,9 +520,21 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
     if (seedingSpace_ == RPhi) {
 
       navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Circular); 
-      
+     
+      for(unsigned int nb1 = 0; nb1 < nBins1_; nb1++) {
+	binsSumsHisto_[it][nb1] = binsSumsHistoN_[nb1+nbins1_counter];
+      }
+      nbins1_counter += nBins1_;	
+	
+      if (seedingAlgoType_.find("Histo") != std::string::npos &&
+	  nBins1_ != binsSumsHisto_[it].size()) {
+	throw cms::Exception("Inconsistent bin size")
+	  << "Inconsistent nBins_X1_histo_multicluster ( " << nBins1_ << " ) and binSumsHisto ( " << binsSumsHisto_[it].size()
+	  << " ) size in HGCalMulticlustering\n";
+      }
+        
       /* smoothen along the phi direction + normalize each bin to same area */
-      Histogram smoothPhiHistoCluster = fillSmoothPhiHistoClusters(histoCluster, binsSumsHisto_);
+      Histogram smoothPhiHistoCluster = fillSmoothPhiHistoClusters(histoCluster, binsSumsHisto_[it]);
 
       /* smoothen along the r/z direction */
       smoothHistoCluster = fillSmoothRPhiHistoClusters(smoothPhiHistoCluster);

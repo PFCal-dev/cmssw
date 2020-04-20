@@ -8,21 +8,22 @@ from Configuration.Eras.Modifier_phase2_hgcalV9_cff import phase2_hgcalV9
 from Configuration.Eras.Modifier_phase2_hgcalV10_cff import phase2_hgcalV10
 from Configuration.Eras.Modifier_phase2_hfnose_cff import phase2_hfnose
 
-
-binSums = cms.vuint32(13,               # 0
-                      11, 11, 11,       # 1 - 3
-                      9, 9, 9,          # 4 - 6
-                      7, 7, 7, 7, 7, 7,  # 7 - 12
-                      5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,  # 13 - 27
-                      3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3  # 28 - 41
-                      )
+binSumslistoflists = [[13, 
+                       11, 11, 11,
+                       9, 9, 9,
+                       7, 7, 7, 7, 7, 7,
+                       5, 5, 5, 5, 5, 5, 5], 
+                      [5, 5, 5, 5, 5, 5, 5, 5,
+                        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]]
+flatten_binSumslist = [val for sublist in binSumslistoflists for val in sublist]
+binSums = cms.vuint32(flatten_binSumslist)
 
 EE_DR_GROUP = 7
 FH_DR_GROUP = 6
 BH_DR_GROUP = 12
 MAX_LAYERS = 52
 
-nBins_X1_histo_multiclusterRPhi = cms.vuint32(42, 42)
+nBins_X1_histo_multiclusterRPhi = cms.vuint32(20, 22)
 nBins_X2_histo_multiclusterRPhi = cms.vuint32(216, 108)
 ROverZMinRPhi=cms.vdouble(0.076, 0.224)
 ROverZMaxRPhi=cms.vdouble(0.224, 0.58)
