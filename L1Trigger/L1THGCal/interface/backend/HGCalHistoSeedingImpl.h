@@ -153,7 +153,6 @@ private:
   std::vector<unsigned> vnBins2_;
   std::vector<std::vector<unsigned>>binsSumsHisto_;
   std::vector<unsigned> binsSumsHistoN_;
-  int nbins1_counter = 0;
   double histoThreshold_ = 20.;
   std::vector<double> neighbour_weights_;
   std::vector<double> smoothing_ecal_;

@@ -48,6 +48,13 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
       << "\nMulticluster MIPT threshold for histo threshold algorithm: " << histoThreshold_
       << "\nMulticluster type of multiclustering algortihm: " << seedingAlgoType_;
 
+  if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
+      unsigned(std::accumulate(vnBins1_.begin(), vnBins1_.end(), 0)) != binsSumsHistoN_.size()) {
+    throw cms::Exception("Inconsistent bin size")
+      << "Inconsistent nBins_X1_histo_multicluster ( " << std::accumulate(vnBins1_.begin(), vnBins1_.end(), 0) << " ) and binSumsHisto ( " << binsSumsHistoN_.size()
+      << " ) size in HGCalMulticlustering\n";
+  }
+
   if (neighbour_weights_.size() != neighbour_weights_size_) {
     throw cms::Exception("Inconsistent vector size")
       << "Inconsistent size of neighbour weights vector in HGCalMulticlustering ( " << neighbour_weights_.size()
@@ -505,41 +512,35 @@ std::vector<std::pair<GlobalPoint, double>> HGCalHistoSeedingImpl::computeSecond
 
 void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCalCluster>>& clustersPtrs,
                                            std::vector<std::pair<GlobalPoint, double>>& seedPositionsEnergy) {
-
+  unsigned nBins1_counter = 0;
+  
   for(size_t it = 0; it != vnBins1_.size(); it++) {
-
+    
     nBins1_ = vnBins1_[it];
     nBins2_ = vnBins2_[it];
     ROverZMin_ = vROverZMin_[it];
     ROverZMax_ = vROverZMax_[it];
-
+    
     /* put clusters into an r/z x phi histogram */
     Histogram histoCluster = fillHistoClusters(clustersPtrs);
     
     Histogram smoothHistoCluster;
     if (seedingSpace_ == RPhi) {
-
+      
       navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Circular); 
-     
+      
       for(unsigned int nb1 = 0; nb1 < nBins1_; nb1++) {
-	binsSumsHisto_[it][nb1] = binsSumsHistoN_[nb1+nbins1_counter];
+        binsSumsHisto_[it][nb1] = binsSumsHistoN_[nb1+nBins1_counter];
       }
-      nbins1_counter += nBins1_;	
-	
-      if (seedingAlgoType_.find("Histo") != std::string::npos &&
-	  nBins1_ != binsSumsHisto_[it].size()) {
-	throw cms::Exception("Inconsistent bin size")
-	  << "Inconsistent nBins_X1_histo_multicluster ( " << nBins1_ << " ) and binSumsHisto ( " << binsSumsHisto_[it].size()
-	  << " ) size in HGCalMulticlustering\n";
-      }
-        
+      nBins1_counter += nBins1_;	
+
       /* smoothen along the phi direction + normalize each bin to same area */
       Histogram smoothPhiHistoCluster = fillSmoothPhiHistoClusters(histoCluster, binsSumsHisto_[it]);
 
       /* smoothen along the r/z direction */
       smoothHistoCluster = fillSmoothRPhiHistoClusters(smoothPhiHistoCluster);
     } else if (seedingSpace_ == XY) {
-
+      
       navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Bounded); 
       
       smoothHistoCluster = fillSmoothHistoClusters(histoCluster, smoothing_ecal_, Bin::Content::Ecal);
@@ -554,7 +555,7 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
         }
       }
     }
-
+    
     /* seeds determined with local maximum criteria */
     std::vector<std::pair<GlobalPoint, double>> tmp_seedPositionsEnergy;
     if (seedingType_ == HistoMaxC3d) {
