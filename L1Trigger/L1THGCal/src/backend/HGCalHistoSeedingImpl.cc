@@ -49,9 +49,9 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
       << "\nMulticluster type of multiclustering algortihm: " << seedingAlgoType_;
 
   if (seedingAlgoType_.find("Histo") != std::string::npos && seedingSpace_ == RPhi &&
-      unsigned(std::accumulate(vnBins1_.begin(), vnBins1_.end(), 0)) != binsSumsHistoN_.size()) {
+      std::accumulate(vnBins1_.begin(), vnBins1_.end(), 0u) != binsSumsHistoN_.size()) {
     throw cms::Exception("Inconsistent bin size")
-      << "Inconsistent nBins_X1_histo_multicluster ( " << std::accumulate(vnBins1_.begin(), vnBins1_.end(), 0) << " ) and binSumsHisto ( " << binsSumsHistoN_.size()
+      << "Inconsistent nBins_X1_histo_multicluster ( " << std::accumulate(vnBins1_.begin(), vnBins1_.end(), 0u) << " ) and binSumsHisto ( " << binsSumsHistoN_.size()
       << " ) size in HGCalMulticlustering\n";
   }
 
@@ -513,9 +513,9 @@ std::vector<std::pair<GlobalPoint, double>> HGCalHistoSeedingImpl::computeSecond
 void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCalCluster>>& clustersPtrs,
                                            std::vector<std::pair<GlobalPoint, double>>& seedPositionsEnergy) {
   unsigned nBins1_counter = 0;
-  
+
   for(size_t it = 0; it != vnBins1_.size(); it++) {
-    
+
     nBins1_ = vnBins1_[it];
     nBins2_ = vnBins2_[it];
     ROverZMin_ = vROverZMin_[it];
@@ -523,22 +523,25 @@ void HGCalHistoSeedingImpl::findHistoSeeds(const std::vector<edm::Ptr<l1t::HGCal
     
     /* put clusters into an r/z x phi histogram */
     Histogram histoCluster = fillHistoClusters(clustersPtrs);
-    
+
     Histogram smoothHistoCluster;
     if (seedingSpace_ == RPhi) {
-      
+
       navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Circular); 
-      
+
+      std::vector<unsigned> tmpbinsSums(nBins1_);
       for(unsigned int nb1 = 0; nb1 < nBins1_; nb1++) {
-        binsSumsHisto_[it][nb1] = binsSumsHistoN_[nb1+nBins1_counter];
+        tmpbinsSums[nb1] = binsSumsHistoN_[nb1+nBins1_counter];
       }
+      binsSumsHisto_.push_back(tmpbinsSums);
+      tmpbinsSums.clear();
       nBins1_counter += nBins1_;	
 
       /* smoothen along the phi direction + normalize each bin to same area */
       Histogram smoothPhiHistoCluster = fillSmoothPhiHistoClusters(histoCluster, binsSumsHisto_[it]);
 
       /* smoothen along the r/z direction */
-      smoothHistoCluster = fillSmoothRPhiHistoClusters(smoothPhiHistoCluster);
+      smoothHistoCluster = fillSmoothRPhiHistoClusters(smoothPhiHistoCluster);   
     } else if (seedingSpace_ == XY) {
       
       navigator_ = Navigator(nBins1_, Navigator::AxisType::Bounded, nBins2_, Navigator::AxisType::Bounded); 
