@@ -127,8 +127,8 @@ histoSecondaryMax_C3d_params = histoMax_C3d_seeding_params.clone(
 
 histoMaxXYVariableDR_C3d_params = histoMax_C3d_seeding_params.clone(
         seeding_space=cms.string("XY"),
-        nBins_X1_histo_multicluster=cms.uint32(192),
-        nBins_X2_histo_multicluster=cms.uint32(192)
+        nBins_X1_histo_multicluster=cms.vuint32(192),
+        nBins_X2_histo_multicluster=cms.vuint32(192)
         )
 
 histoInterpolatedMax_C3d_params = histoMax_C3d_seeding_params.clone(
