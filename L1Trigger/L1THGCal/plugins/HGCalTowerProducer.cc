@@ -26,6 +26,7 @@ public:
 private:
   // inputs
   edm::EDGetToken input_towers_map_;
+  edm::EDGetToken input_trigger_cells_;
   edm::ESHandle<HGCalTriggerGeometryBase> triggerGeometry_;
 
   std::unique_ptr<HGCalTowerProcessorBase> towersProcess_;
@@ -34,7 +35,9 @@ private:
 DEFINE_FWK_MODULE(HGCalTowerProducer);
 
 HGCalTowerProducer::HGCalTowerProducer(const edm::ParameterSet& conf)
-    : input_towers_map_(consumes<l1t::HGCalTowerMapBxCollection>(conf.getParameter<edm::InputTag>("InputTowerMaps"))) {
+    : input_towers_map_(consumes<l1t::HGCalTowerMapBxCollection>(conf.getParameter<edm::InputTag>("InputTowerMaps"))),
+      input_trigger_cells_(
+          consumes<l1t::HGCalClusterBxCollection>(conf.getParameter<edm::InputTag>("InputTriggerCells"))) {
   //setup TowerMap parameters
   const edm::ParameterSet& towerParamConfig = conf.getParameterSet("ProcessorParameters");
   const std::string& towerProcessorName = towerParamConfig.getParameter<std::string>("ProcessorName");
@@ -44,6 +47,7 @@ HGCalTowerProducer::HGCalTowerProducer(const edm::ParameterSet& conf)
 }
 
 void HGCalTowerProducer::beginRun(const edm::Run& /*run*/, const edm::EventSetup& es) {
+  towersProcess_->eventSetup(es);
   es.get<CaloGeometryRecord>().get("", triggerGeometry_);
   towersProcess_->setGeometry(triggerGeometry_.product());
 }
@@ -53,11 +57,14 @@ void HGCalTowerProducer::produce(edm::Event& e, const edm::EventSetup& es) {
   auto towers_output = std::make_unique<l1t::HGCalTowerBxCollection>();
 
   // Input collections
-  edm::Handle<l1t::HGCalTowerMapBxCollection> towersMapBxColl;
+  std::pair<edm::Handle<l1t::HGCalTowerMapBxCollection>, edm::Handle<l1t::HGCalClusterBxCollection> > inputsColl;
+  auto& towersMapBxColl = inputsColl.first;
+  auto& clustersBxColl = inputsColl.second;
 
   e.getByToken(input_towers_map_, towersMapBxColl);
+  e.getByToken(input_trigger_cells_, clustersBxColl);
 
-  towersProcess_->run(towersMapBxColl, *towers_output, es);
+  towersProcess_->run(inputsColl, *towers_output, es);
 
   e.put(std::move(towers_output), towersProcess_->name());
 }
