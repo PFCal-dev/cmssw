@@ -6,6 +6,7 @@
 
 #include "DataFormats/L1THGCal/interface/HGCalTriggerCell.h"
 #include "DataFormats/L1THGCal/interface/HGCalTriggerSums.h"
+#include "DataFormats/L1THGCal/interface/HGCalConcentratorData.h"
 #include "DataFormats/HGCDigi/interface/HGCDigiCollections.h"
 
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
@@ -45,6 +46,7 @@ HGCalConcentratorProducer::HGCalConcentratorProducer(const edm::ParameterSet& co
 
   produces<l1t::HGCalTriggerCellBxCollection>(concentratorProcess_->name());
   produces<l1t::HGCalTriggerSumsBxCollection>(concentratorProcess_->name());
+  produces<l1t::HGCalConcentratorDataBxCollection>(concentratorProcess_->name());
 }
 
 void HGCalConcentratorProducer::beginRun(const edm::Run& /*run*/, const edm::EventSetup& es) {
@@ -55,7 +57,8 @@ void HGCalConcentratorProducer::beginRun(const edm::Run& /*run*/, const edm::Eve
 
 void HGCalConcentratorProducer::produce(edm::Event& e, const edm::EventSetup& es) {
   // Output collections
-  std::pair<l1t::HGCalTriggerCellBxCollection, l1t::HGCalTriggerSumsBxCollection> cc_output;
+  std::tuple<l1t::HGCalTriggerCellBxCollection, l1t::HGCalTriggerSumsBxCollection, l1t::HGCalConcentratorDataBxCollection>
+      cc_output;
 
   // Input collections
   edm::Handle<l1t::HGCalTriggerCellBxCollection> trigCellBxColl;
@@ -63,6 +66,10 @@ void HGCalConcentratorProducer::produce(edm::Event& e, const edm::EventSetup& es
   e.getByToken(input_cell_, trigCellBxColl);
   concentratorProcess_->run(trigCellBxColl, cc_output, es);
   // Put in the event
-  e.put(std::make_unique<l1t::HGCalTriggerCellBxCollection>(std::move(cc_output.first)), concentratorProcess_->name());
-  e.put(std::make_unique<l1t::HGCalTriggerSumsBxCollection>(std::move(cc_output.second)), concentratorProcess_->name());
+  e.put(std::make_unique<l1t::HGCalTriggerCellBxCollection>(std::move(std::get<0>(cc_output))),
+        concentratorProcess_->name());
+  e.put(std::make_unique<l1t::HGCalTriggerSumsBxCollection>(std::move(std::get<1>(cc_output))),
+        concentratorProcess_->name());
+  e.put(std::make_unique<l1t::HGCalConcentratorDataBxCollection>(std::move(std::get<2>(cc_output))),
+        concentratorProcess_->name());
 }
