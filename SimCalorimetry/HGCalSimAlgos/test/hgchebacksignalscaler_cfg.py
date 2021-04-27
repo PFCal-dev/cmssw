@@ -10,10 +10,10 @@ options.register ("sipmMap", "",  VarParsing.multiplicity.singleton, VarParsing.
 options.register ("nPEperMIP", "",  VarParsing.multiplicity.singleton, VarParsing.varType.int)
 options.parseArguments()
 
-process = cms.Process("demo",eras.Phase2C8)
+process = cms.Process("demo",eras.Phase2C9)
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-process.load('Configuration.Geometry.GeometryExtended2026D41Reco_cff')
+process.load('Configuration.Geometry.GeometryExtended2026D49Reco_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic', '')
 
@@ -27,7 +27,7 @@ process.plotter = cms.EDAnalyzer("HGCHEbackSignalScalerAnalyzer",
 )
 
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("scalingNumbers.root")
+    fileName = cms.string("dosemap_output_sci.root")
 )
 
 process.p = cms.Path(process.plotter)
