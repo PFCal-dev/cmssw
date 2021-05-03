@@ -63,7 +63,6 @@ std::pair<double, double> HGCalSciNoiseMap::scaleByDose(const HGCScintillatorDet
     //later this will be scaled appropriately to the final area
     //with the scaleBySipmArea method
     noise = 2.33*sqrt(pxFiringRate)*0.5;    
-
   }
 
   return std::make_pair(scaleFactor, noise);

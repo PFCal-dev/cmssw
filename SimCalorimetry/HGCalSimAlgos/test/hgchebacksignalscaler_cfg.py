@@ -8,6 +8,7 @@ options = VarParsing()
 options.register ("doseMap", "",  VarParsing.multiplicity.singleton, VarParsing.varType.string)
 options.register ("sipmMap", "",  VarParsing.multiplicity.singleton, VarParsing.varType.string)
 options.register ("nPEperMIP", "",  VarParsing.multiplicity.singleton, VarParsing.varType.int)
+options.register ("pxFiringRate","",  VarParsing.multiplicity.singleton, VarParsing.varType.float)
 options.parseArguments()
 
 process = cms.Process("demo",eras.Phase2C9)
@@ -21,9 +22,10 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 process.source = cms.Source("EmptySource")
 
 process.plotter = cms.EDAnalyzer("HGCHEbackSignalScalerAnalyzer",
-    doseMap  = cms.string( options.doseMap ),
-    sipmMap  = cms.string( options.sipmMap ),
-    nPEperMIP = cms.uint32( options.nPEperMIP )
+                                 doseMap  = cms.string( options.doseMap ),
+                                 sipmMap  = cms.string( options.sipmMap ),
+                                 pxFiringRate=cms.double(options.pxFiringRate),                                 
+                                 nPEperMIP = cms.uint32( options.nPEperMIP )
 )
 
 process.TFileService = cms.Service("TFileService",

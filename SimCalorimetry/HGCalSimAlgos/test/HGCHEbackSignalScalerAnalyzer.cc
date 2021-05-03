@@ -71,7 +71,7 @@ private:
   int firstLayer_, lastLayer_;
   const float radiusMin_ = 70;   //cm
   const float radiusMax_ = 280;  //cm
-  const int radiusBins_ = 525;   //cm
+  const int radiusBins_ = 25;  //nbins //cm
   const int nWedges_ = 72;
 };
 
@@ -119,47 +119,53 @@ void HGCHEbackSignalScalerAnalyzer::analyze(const edm::Event& iEvent, const edm:
   createBinning(detIdVec);
   printBoundaries();
   //instantiate binning array
-  std::vector<double> tmpVec;
+  std::vector<int> layvec;
   for (auto elem : layerMap_)
-    tmpVec.push_back(elem.second);
+    layvec.push_back(elem.first);
+  int minLay=*std::min_element(layvec.begin(), layvec.end());
+  int maxLay=*std::max_element(layvec.begin(), layvec.end());
+  size_t nLay(layvec.size());
 
-  double* zBins = tmpVec.data();
-  int nzBins = tmpVec.size() - 1;
+  std::map<std::string,TH2F *> histos;
 
-  TProfile2D* doseMap = fs->make<TProfile2D>("doseMap", "doseMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* fluenceMap =
-      fs->make<TProfile2D>("fluenceMap", "fluenceMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* scaleByDoseMap =
-      fs->make<TProfile2D>("scaleByDoseMap", "scaleByDoseMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* scaleByTileAreaMap = fs->make<TProfile2D>(
-      "scaleByTileAreaMap", "scaleByTileAreaMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* scaleByDoseAreaMap = fs->make<TProfile2D>(
-      "scaleByDoseAreaMap", "scaleByDoseAreaMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* noiseByFluenceMap = fs->make<TProfile2D>(
-      "noiseByFluenceMap", "noiseByFluenceMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* expNoiseMap = fs->make<TProfile2D>(
-      "expNoiseMap", "expNoiseMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* probNoiseAboveHalfMip = fs->make<TProfile2D>(
-      "probNoiseAboveHalfMip", "probNoiseAboveHalfMip", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
+  histos["tilecount"] = fs->make<TH2F>("tilecount", ";Layer;Radius [cm];#tiles", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["doseMap"] = fs->make<TH2F>("doseMap", ";Layer;Radius [cm];<D>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["fluenceMap"] =
+      fs->make<TH2F>("fluenceMap", "f;Layer;Radius [cm];<f>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["scaleByDoseMap"] =
+      fs->make<TH2F>("scaleByDoseMap", ";Layer;Radius [cm];<S>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["scaleByTileAreaMap"] = fs->make<TH2F>(
+      "scaleByTileAreaMap", ";Layer;Radius [cm];<S>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["scaleByDoseAreaMap"] = fs->make<TH2F>(
+      "scaleByDoseAreaMap", ";Layer;Radius [cm];<S>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["noiseByFluenceMap"] = fs->make<TH2F>(
+      "noiseByFluenceMap", ";Layer;Radius [cm];<N>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["expNoiseMap"] = fs->make<TH2F>(
+      "expNoiseMap", ";Layer;Radius [cm];<N>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["probNoiseAboveHalfMip"] = fs->make<TH2F>(
+      "probNoiseAboveHalfMip", "probNoiseAboveHalfMip", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
 
-  TProfile2D* signalToNoiseFlatAreaMap = fs->make<TProfile2D>(
-      "signalToNoiseFlatAreaMap", "signalToNoiseFlatAreaMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* signalToNoiseDoseMap = fs->make<TProfile2D>(
-      "signalToNoiseDoseMap", "signalToNoiseDoseMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* signalToNoiseAreaMap = fs->make<TProfile2D>(
-      "signalToNoiseAreaMap", "signalToNoiseAreaMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* signalToNoiseDoseAreaMap = fs->make<TProfile2D>(
-      "signalToNoiseDoseAreaMap", "signalToNoiseDoseAreaMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
-  TProfile2D* signalToNoiseDoseAreaSipmMap = fs->make<TProfile2D>("signalToNoiseDoseAreaSipmMap",
-                                                                  "signalToNoiseDoseAreaSipmMap",
-                                                                  nzBins,
-                                                                  zBins,
-                                                                  radiusBins_,
-                                                                  radiusMin_,
-                                                                  radiusMax_);
+  histos["signalToNoiseFlatAreaMap"] = fs->make<TH2F>(
+      "signalToNoiseFlatAreaMap", ";Layer;Radius [cm];<S/N>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["signalToNoiseDoseMap"] = fs->make<TH2F>(
+      "signalToNoiseDoseMap", ";Layer;Radius [cm];<S/N>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["signalToNoiseAreaMap"] = fs->make<TH2F>(
+      "signalToNoiseAreaMap", ";Layer;Radius [cm];<S/N>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["signalToNoiseDoseAreaMap"] = fs->make<TH2F>(
+      "signalToNoiseDoseAreaMap", ";Layer;Radius [cm];<S/N>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+  histos["signalToNoiseDoseAreaSipmMap"] = fs->make<TH2F>("signalToNoiseDoseAreaSipmMap",
+                                                          ";Layer;Radius [cm];<S/N>",
+                                                          nLay,minLay,maxLay+1,
+                                                          radiusBins_,
+                                                          radiusMin_,
+                                                          radiusMax_);
 
-  TProfile2D* saturationMap =
-      fs->make<TProfile2D>("saturationMap", "saturationMap", nzBins, zBins, radiusBins_, radiusMin_, radiusMax_);
+  histos["saturationMap"] =
+      fs->make<TH2F>("saturationMap", ";Layer;Radius [cm];<Saturation>", nLay,minLay,maxLay+1, radiusBins_, radiusMin_, radiusMax_);
+
+  for(auto h : histos) {
+    h.second->Sumw2();
+  }
 
   //book per layer plots
   std::map<int, TH1D*> probNoiseAboveHalfMip_layerMap;
@@ -189,6 +195,7 @@ void HGCHEbackSignalScalerAnalyzer::analyze(const edm::Event& iEvent, const edm:
     double fluence = scal.getFluenceValue(DetId::HGCalHSc, layer, radius);
 
     auto dosePair = scal.scaleByDose(scId, radius,pxFiringRate_);
+
     float scaleFactorBySipmArea = scal.scaleBySipmArea(scId, radius);
     float scaleFactorByTileArea = scal.scaleByTileArea(scId, radius);
     float scaleFactorByDose = dosePair.first;
@@ -202,42 +209,35 @@ void HGCHEbackSignalScalerAnalyzer::analyze(const edm::Event& iEvent, const edm:
 
     int ilayer = scId.layer();
     int iradius = scId.iradiusAbs();
+
     std::pair<double, double> cellSize = hgcCons_->cellSizeTrap(scId.type(), scId.iradiusAbs());
-    float inradius = cellSize.first;
+    float rho = cellSize.first;
 
-    float zpos = std::abs(global.z());
+    histos["tilecount"]->Fill(ilayer,rho);
+    histos["doseMap"]->Fill(ilayer, rho, dose);
+    histos["fluenceMap"]->Fill(ilayer, rho, fluence);
+    histos["scaleByDoseMap"]->Fill(ilayer, rho, scaleFactorByDose);
+    histos["scaleByTileAreaMap"]->Fill(ilayer, rho, scaleFactorByTileArea);
+    histos["scaleByDoseAreaMap"]->Fill(ilayer, rho, scaleFactorByDose * scaleFactorByTileArea);
+    histos["noiseByFluenceMap"]->Fill(ilayer, rho, noiseByFluence);
+    histos["expNoiseMap"]->Fill(ilayer, rho, expNoise);
+    std::cout << ilayer << " " << rho << " " << dose << " " << fluence << " " 
+              <<   nPEperMIP_ * scaleFactorByTileArea * scaleFactorByDose << " "
+              << noiseByFluence << std::endl;
 
-    int bin = doseMap->GetYaxis()->FindBin(inradius);
-    while (scaleByDoseMap->GetYaxis()->GetBinLowEdge(bin) < layerRadiusMap_[ilayer][iradius + 1]) {
-      LogDebug("HGCHEbackSignalScalerAnalyzer")
-          << "rIN = " << layerRadiusMap_[ilayer][iradius] << " rIN+1 = " << layerRadiusMap_[ilayer][iradius + 1]
-          << " inradius = " << inradius << " type = " << scId.type() << " ilayer = " << scId.layer();
-
-      int ybin(scaleByDoseMap->GetYaxis()->GetBinCenter(bin));
-
-      doseMap->Fill(zpos, ybin, dose);
-      fluenceMap->Fill(zpos, ybin, fluence);
-      scaleByDoseMap->Fill(zpos, ybin, scaleFactorByDose);
-      scaleByTileAreaMap->Fill(zpos, ybin, scaleFactorByTileArea);
-      scaleByDoseAreaMap->Fill(zpos, ybin, scaleFactorByDose * scaleFactorByTileArea);
-      noiseByFluenceMap->Fill(zpos, ybin, noiseByFluence);
-      expNoiseMap->Fill(zpos, ybin, expNoise);
-      probNoiseAboveHalfMip->Fill(zpos, ybin, prob);
-      signalToNoiseFlatAreaMap->Fill(zpos,ybin,
-                                     100 * scaleFactorByTileArea * scaleFactorBySipmArea / expNoise);
-      signalToNoiseDoseMap->Fill(zpos, ybin, 
-                                 nPEperMIP_ * scaleFactorByDose / noiseByFluence);
-      signalToNoiseAreaMap->Fill(zpos, ybin, 
-                                 nPEperMIP_ * scaleFactorByTileArea / noiseByFluence);
-      signalToNoiseDoseAreaMap->Fill(zpos, ybin,
-                                     nPEperMIP_ * scaleFactorByTileArea * scaleFactorByDose / noiseByFluence);
-      signalToNoiseDoseAreaSipmMap->Fill( zpos, ybin,
-                                          nPEperMIP_ * scaleFactorByTileArea * scaleFactorByDose * scaleFactorBySipmArea / expNoise);
-      saturationMap->Fill( zpos, ybin,
-                           nPEperMIP_ * scaleFactorByTileArea * scaleFactorByDose * scaleFactorBySipmArea + std::pow(expNoise, 2));
-      
-      ++bin;
-    }
+    histos["probNoiseAboveHalfMip"]->Fill(ilayer, rho, prob);
+    histos["signalToNoiseFlatAreaMap"]->Fill(ilayer,rho,
+                                            100 * scaleFactorByTileArea * scaleFactorBySipmArea / expNoise);
+    histos["signalToNoiseDoseMap"]->Fill(ilayer, rho, 
+                                         nPEperMIP_ * scaleFactorByDose / noiseByFluence);
+    histos["signalToNoiseAreaMap"]->Fill(ilayer, rho, 
+                                         nPEperMIP_ * scaleFactorByTileArea / noiseByFluence);
+    histos["signalToNoiseDoseAreaMap"]->Fill(ilayer, rho,
+                                             nPEperMIP_ * scaleFactorByTileArea * scaleFactorByDose / noiseByFluence);
+    histos["signalToNoiseDoseAreaSipmMap"]->Fill(ilayer, rho,
+                                                 nPEperMIP_ * scaleFactorByTileArea * scaleFactorByDose * scaleFactorBySipmArea / expNoise);
+    histos["saturationMap"]->Fill(ilayer, rho,
+                                  nPEperMIP_ * scaleFactorByTileArea * scaleFactorByDose * scaleFactorBySipmArea + std::pow(expNoise, 2));
 
     //fill per layer plots
     //float rpos = sqrt(global.x()*global.x() + global.y()*global.y());
@@ -250,17 +250,23 @@ void HGCHEbackSignalScalerAnalyzer::analyze(const edm::Event& iEvent, const edm:
   std::cout << std::endl;
   std::cout << "S/N > 5 boundaries" << std::endl;
   std::cout << std::setw(5) << "layer" << std::setw(15) << "boundary" << std::endl;
-  for (int xx = 1; xx < signalToNoiseDoseAreaMap->GetNbinsX() + 1; ++xx) {
+  for (int xx = 1; xx < histos["signalToNoiseDoseAreaMap"]->GetNbinsX() + 1; ++xx) {
     bool print = true;
     float SoN = 0;
-    for (int yy = 1; yy < signalToNoiseDoseAreaMap->GetNbinsY() + 1; ++yy) {
-      SoN = signalToNoiseDoseAreaMap->GetBinContent(xx, yy);
+    for (int yy = 1; yy < histos["signalToNoiseDoseAreaMap"]->GetNbinsY() + 1; ++yy) {
+      SoN = histos["signalToNoiseDoseAreaMap"]->GetBinContent(xx, yy);
       if (SoN > 5 && print == true) {
         std::cout << std::setprecision(5) << std::setw(5) << xx + 8 << std::setw(15)
-                  << signalToNoiseDoseAreaMap->GetYaxis()->GetBinLowEdge(yy) << std::endl;
+                  << histos["signalToNoiseDoseAreaMap"]->GetYaxis()->GetBinLowEdge(yy) << std::endl;
         print = false;
       }
     }
+  }
+
+  //normalize histograms to reflect the average
+  for(auto h : histos) {
+    if(h.first!="tilecount")
+      h.second->Divide( histos["tilecount"] );
   }
 }
 
