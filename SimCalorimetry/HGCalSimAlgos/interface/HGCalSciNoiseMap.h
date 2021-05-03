@@ -20,7 +20,7 @@ public:
   */
   double scaleByTileArea(const HGCScintillatorDetId &, const double);
   double scaleBySipmArea(const HGCScintillatorDetId &, const double);
-  std::pair<double, double> scaleByDose(const HGCScintillatorDetId &, const double);
+  std::pair<double, double> scaleByDose(const HGCScintillatorDetId &, const double, const double);
 
   void setSipmMap(const std::string &);
 

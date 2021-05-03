@@ -26,7 +26,7 @@ private:
   //calice-like digitization parameters
   uint32_t algo_;
   bool scaleByTileArea_, scaleBySipmArea_, scaleByDose_, thresholdFollowsMIP_;
-  float keV2MIP_, noise_MIP_;
+  float keV2MIP_, noise_MIP_,pxFiringRate_;
   float nPEperMIP_, nTotalPE_, xTalk_, sdPixels_;
   std::string doseMapFile_, sipmMapFile_;
   HGCalSciNoiseMap scal_;
@@ -57,6 +57,7 @@ HGCHEbackDigitizer::HGCHEbackDigitizer(const edm::ParameterSet& ps) : HGCDigitiz
   scaleBySipmArea_ = cfg.getParameter<bool>("scaleBySipmArea");
   sipmMapFile_ = cfg.getParameter<std::string>("sipmMap");
   scaleByDose_ = cfg.getParameter<edm::ParameterSet>("noise").getParameter<bool>("scaleByDose");
+  pxFiringRate_ = cfg.getParameter<edm::ParameterSet>("noise").getParameter<double>("pxFiringRate");
   unsigned int scaleByDoseAlgo = cfg.getParameter<edm::ParameterSet>("noise").getParameter<uint32_t>("scaleByDoseAlgo");
   scaleByDoseFactor_ = cfg.getParameter<edm::ParameterSet>("noise").getParameter<double>("scaleByDoseFactor");
   doseMapFile_ = cfg.getParameter<edm::ParameterSet>("noise").getParameter<std::string>("doseMap");
@@ -164,7 +165,7 @@ void HGCHEbackDigitizer::runRealisticDigitizer(std::unique_ptr<HGCalDigiCollecti
 
       //take into account the darkening of the scintillator and SiPM dark current
       if (scaleByDose_) {
-        auto dosePair = scal_.scaleByDose(id, radius);
+        auto dosePair = scal_.scaleByDose(id, radius, pxFiringRate_);
         scaledPePerMip *= dosePair.first;
         tunedNoise = dosePair.second;
       }
