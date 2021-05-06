@@ -57,12 +57,8 @@ std::pair<double, double> HGCalSciNoiseMap::scaleByDose(const HGCScintillatorDet
     const double normfactor = 2.18;
     noise = normfactor * sqrt(cellFluence * fluencefactor);
   }
-  else{
-    
-    //the 0.5 is added so that it corresponds to a SiPM area of 2mm^2 
-    //later this will be scaled appropriately to the final area
-    //with the scaleBySipmArea method
-    noise = 2.33*sqrt(pxFiringRate)*0.5;    
+  else{    
+    noise = 2.38*sqrt(pxFiringRate);    
   }
 
   return std::make_pair(scaleFactor, noise);
