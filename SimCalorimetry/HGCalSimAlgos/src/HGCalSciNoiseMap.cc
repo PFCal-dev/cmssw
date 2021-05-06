@@ -35,7 +35,7 @@ std::unordered_map<int, float> HGCalSciNoiseMap::readSipmPars(const std::string&
 }
 
 //
-std::pair<double, double> HGCalSciNoiseMap::scaleByDose(const HGCScintillatorDetId& cellId, const double radius) {
+std::pair<double, double> HGCalSciNoiseMap::scaleByDose(const HGCScintillatorDetId& cellId, const double radius,const double pxFiringRate) {
   if (getDoseMap().empty())
     return std::make_pair(1., 0.);
 
@@ -51,9 +51,15 @@ std::pair<double, double> HGCalSciNoiseMap::scaleByDose(const HGCScintillatorDet
   //where F is the fluence and A is the SiPM area
   double cellFluence = getFluenceValue(DetId::HGCalHSc, layer, radius);  //in 1-Mev-equivalent neutrons per cm2
 
-  constexpr double fluencefactor = 2. / (2 * 1e13);  //SiPM area = 2mm^2
-  const double normfactor = 2.18;
-  double noise = normfactor * sqrt(cellFluence * fluencefactor);
+  double noise(0.);
+  if(pxFiringRate<0){
+    constexpr double fluencefactor = 2. / (2 * 1e13);  //SiPM area = 2mm^2
+    const double normfactor = 2.18;
+    noise = normfactor * sqrt(cellFluence * fluencefactor);
+  }
+  else{    
+    noise = 2.38*sqrt(pxFiringRate);    
+  }
 
   return std::make_pair(scaleFactor, noise);
 }

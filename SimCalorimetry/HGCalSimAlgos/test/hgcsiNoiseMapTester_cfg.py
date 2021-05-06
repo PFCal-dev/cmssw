@@ -8,7 +8,7 @@ options = VarParsing()
 options.register ("doseMap", "",  VarParsing.multiplicity.singleton, VarParsing.varType.string)
 options.parseArguments()
 
-process = cms.Process("demo",eras.Phase2C8)
+process = cms.Process("demo",eras.Phase2C9)
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.load('Configuration.Geometry.GeometryExtended2026D49Reco_cff')

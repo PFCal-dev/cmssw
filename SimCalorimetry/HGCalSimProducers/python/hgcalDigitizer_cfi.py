@@ -58,6 +58,7 @@ HGCAL_noise_heback = cms.PSet(
     scaleByDose = cms.bool(False),
     scaleByDoseAlgo = cms.uint32(0),
     scaleByDoseFactor = cms.double(1),
+    pxFiringRate = cms.double(-1),
     doseMap = cms.string(""), #empty dose map at begin-of-life
     noise_MIP = cms.double(1./100.)
     )
@@ -151,6 +152,7 @@ hgchebackDigitizer = cms.PSet(
         algo          = cms.uint32(2),
         scaleByTileArea= cms.bool(False),
         scaleBySipmArea= cms.bool(False),
+        pxFiringRate = cms.double(-1),
         sipmMap       = cms.string("SimCalorimetry/HGCalSimProducers/data/sipmParams_geom-10.txt"),
         noise         = cms.PSet(refToPSet_ = cms.string("HGCAL_noise_heback")), #scales both for scint raddam and sipm dark current
         keV2MIP       = cms.double(1./675.0),
@@ -299,11 +301,12 @@ def HGCal_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=0,byDoseMap=doseMap
         )
     return process
 
-def HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=0,byDoseMap=doseMap,byDoseFactor=1):
+def HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=0,byDoseMap=doseMap,byDoseFactor=1,pxFiringRate=2):
     process.HGCAL_noise_heback = cms.PSet(
         scaleByDose = cms.bool(byDose),
         scaleByDoseAlgo = cms.uint32(byDoseAlgo),
         scaleByDoseFactor = cms.double(byDoseFactor),
+        pxFiringRate= cms.double(pxFiringRate),
         doseMap = byDoseMap,
         noise_MIP = cms.double(1./5.) #uses noise map
         )
@@ -321,6 +324,7 @@ def HGCal_disableNoise(process):
         scaleByDose = cms.bool(False),
         scaleByDoseAlgo = cms.uint32(0),
         scaleByDoseFactor = cms.double(1),
+        pxFiringRate = cms.double(-1),
         doseMap = cms.string(""),
         noise_MIP = cms.double(0.) #zero noise
         )
