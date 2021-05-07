@@ -58,7 +58,8 @@ std::pair<double, double> HGCalSciNoiseMap::scaleByDose(const HGCScintillatorDet
     noise = normfactor * sqrt(cellFluence * fluencefactor);
   }
   else{    
-    noise = 2.38*sqrt(pxFiringRate);    
+    //noise = 2.38*sqrt(pxFiringRate);    
+    noise = 3.16*sqrt(pxFiringRate);    
   }
 
   return std::make_pair(scaleFactor, noise);

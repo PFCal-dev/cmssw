@@ -150,9 +150,10 @@ void HGCHEbackDigitizer::runRealisticDigitizer(std::unique_ptr<HGCalDigiCollecti
     addCellMetadata(cell, theGeom, id);
 
     float scaledPePerMip = nPEperMIP_;           //needed to scale according to tile geometry
+    float refPePerMip    = nPEperMIP_;
     float tunedNoise = nPEperMIP_ * noise_MIP_;  //flat noise case
     float sipmFactor = 1.;                       //standard 2 mm^2 sipm
-
+    
     if (id.det() == DetId::HGCalHSc)  //skip those geometries that have HE used as BH
     {
       double radius(0);
@@ -175,6 +176,7 @@ void HGCHEbackDigitizer::runRealisticDigitizer(std::unique_ptr<HGCalDigiCollecti
         sipmFactor = scal_.scaleBySipmArea(id, radius);
         scaledPePerMip *= sipmFactor;
         tunedNoise *= sqrt(sipmFactor);
+        refPePerMip *= sipmFactor;
       }
     }
 
@@ -228,7 +230,7 @@ void HGCHEbackDigitizer::runRealisticDigitizer(std::unique_ptr<HGCalDigiCollecti
     HGCalDataFrame newDataFrame(id);
     float adcThr = this->myFEelectronics_->getADCThreshold();  //this is in MIPs
     float adcLsb = this->myFEelectronics_->getADClsb();
-    uint32_t thrADC(thresholdFollowsMIP_ ? std::floor(adcThr / adcLsb * scaledPePerMip / nPEperMIP_)
+    uint32_t thrADC(thresholdFollowsMIP_ ? std::floor(adcThr / adcLsb * scaledPePerMip / refPePerMip)
                                          : std::floor(adcThr / adcLsb));
 
     this->myFEelectronics_->runShaper(newDataFrame, chargeColl, toa, engine, thrADC);
