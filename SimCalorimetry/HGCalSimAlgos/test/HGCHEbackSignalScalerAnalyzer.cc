@@ -211,24 +211,6 @@ void HGCHEbackSignalScalerAnalyzer::analyze(const edm::Event& iEvent, const edm:
     layerHistos_[layer]["thr_ieta"]->Fill(ieta,thrADC);
     layerHistos_[layer]["thr_iphi"]->Fill(iphi,thrADC);
   }
-
-  //normalize by the number of tiles to have the mean stored
-  for(auto h : histos_) {
-    TString name(h.first);
-    if(name.Contains("count_") ) continue;
-    TString pfix( name.Contains("ieta") ? "ieta" : "iphi" );
-    h.second->Divide( histos_["count_"+pfix] );
-  }
-
-  for(auto h : layerHistos_) {
-    int lay(h.first);
-    for(auto hh : layerHistos_[lay]) {
-      TString name(hh.first);
-      if(name.Contains("count_") ) continue;
-      TString pfix( name.Contains("ieta") ? "ieta" : "iphi" );
-      hh.second->Divide( layerHistos_[lay]["count_"+pfix] );
-    }
-  }
 }
 
 //
