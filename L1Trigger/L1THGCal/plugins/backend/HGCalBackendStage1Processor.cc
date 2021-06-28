@@ -44,7 +44,8 @@ public:
     for (const auto& trigMod : collInput) {
       uint32_t module = geometry_->getModuleFromTriggerCell(trigMod.detId());
       uint32_t fpga = geometry_->getStage1FpgaFromModule(module);
-      triggerCellsPtrs[fpga].push_back(trigMod);
+      edm::Ptr<l1t::HGCalTriggerCell> ptr(collHandle,fpga);
+      triggerCellsPtrs.push_back(ptr);
     }
 
     /* create a persistent vector of pointers to the trigger-cells */
@@ -54,7 +55,7 @@ public:
 //      triggerCellsPtrs.push_back(ptr);
 //    }
      
-    for (const auto& module_fpga : triggerCellsPtrs) {
+    for (const auto& tgcell_fpga : triggerCellsPtrs) {
     std::sort(triggerCellsPtrs.begin(),
               triggerCellsPtrs.end(),
               [](const edm::Ptr<l1t::HGCalTriggerCell>& a, const edm::Ptr<l1t::HGCalTriggerCell>& b) -> bool {
@@ -64,16 +65,16 @@ public:
     /* call to C2d clustering */
     switch (clusteringAlgorithmType_) {
       case dRC2d:
-        clustering_->clusterizeDR(module_fpga.second, collCluster2D);
+        clustering_->clusterizeDR(tgcell_fpga.second, collCluster2D);
         break;
       case NNC2d:
-        clustering_->clusterizeNN(module_fpga.second, collCluster2D, *triggerGeometry_);
+        clustering_->clusterizeNN(tgcell_fpga.second, collCluster2D, *triggerGeometry_);
         break;
       case dRNNC2d:
-        clustering_->clusterizeDRNN(module_fpga.second, collCluster2D, *triggerGeometry_);
+        clustering_->clusterizeDRNN(tgcell_fpga.second, collCluster2D, *triggerGeometry_);
         break;
       case dummyC2d:
-        clusteringDummy_->clusterizeDummy(module_fpga.second, collCluster2D);
+        clusteringDummy_->clusterizeDummy(tgcell_fpga.second, collCluster2D);
         break;
       default:
         // Should not happen, clustering type checked in constructor
