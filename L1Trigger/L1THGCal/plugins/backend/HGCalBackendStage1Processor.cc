@@ -41,13 +41,16 @@ public:
  //   std::unordered_map<uint32_t,std::vector<l1t::HGCalTriggerCell>> triggerCellsPtrs;
     std::unordered_map<uint32_t,std::vector<edm::Ptr<l1t::HGCalTriggerCell>>> triggerCellsPtrs;
 //    std::vector<edm::Ptr<l1t::HGCalTriggerCell> > triggerCellsPtrs;
+
+    for (unsigned i = 0; i < collHandle->size(); ++i) {
     for (const auto& trigMod : collInput) {
+      edm::Ptr<l1t::HGCalTriggerCell> ptr(collHandle,i);
       uint32_t module = geometry_->getModuleFromTriggerCell(trigMod.detId());
       uint32_t fpga = geometry_->getStage1FpgaFromModule(module);
-      edm::Ptr<l1t::HGCalTriggerCell> ptr(collHandle,fpga);
-      triggerCellsPtrs.push_back(ptr);
+//      edm::Ptr<l1t::HGCalTriggerCell> ptr(collHandle,fpga);
+      triggerCellsPtrs[fpga].push_back(ptr);
     }
-
+  }
     /* create a persistent vector of pointers to the trigger-cells */
 //    std::vector<edm::Ptr<l1t::HGCalTriggerCell>> triggerCellsPtrs;
 //    for (unsigned i = 0; i < collHandle->size(); ++i) {
@@ -55,13 +58,13 @@ public:
 //      triggerCellsPtrs.push_back(ptr);
 //    }
      
-    for (const auto& tgcell_fpga : triggerCellsPtrs) {
+//    for (const auto& tgcell_fpga : triggerCellsPtrs) {
     std::sort(triggerCellsPtrs.begin(),
               triggerCellsPtrs.end(),
               [](const edm::Ptr<l1t::HGCalTriggerCell>& a, const edm::Ptr<l1t::HGCalTriggerCell>& b) -> bool {
                 return a->mipPt() > b->mipPt();
               });
-
+for (const auto& tgcell_fpga : triggerCellsPtrs) {
     /* call to C2d clustering */
     switch (clusteringAlgorithmType_) {
       case dRC2d:
