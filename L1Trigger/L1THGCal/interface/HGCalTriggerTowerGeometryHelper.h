@@ -15,6 +15,7 @@
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerTools.h"
 #include "DataFormats/L1THGCal/interface/HGCalTriggerCell.h"
 #include "DataFormats/L1THGCal/interface/HGCalTriggerSums.h"
+#include "L1Trigger/L1THGCal/interface/HGCalModuleDetId.h"
 
 #include <vector>
 #include <unordered_map>
@@ -35,14 +36,15 @@ public:
   const std::vector<l1t::HGCalTowerCoord>& getTowerCoordinates() const;
 
   unsigned short getTriggerTowerFromEtaPhi(const float& eta, const float& phi) const;
-  unsigned short getTriggerTower(const l1t::HGCalTriggerCell&) const;
-  unsigned short getTriggerTower(const l1t::HGCalTriggerSums&) const;
+  std::unordered_map<unsigned short, float> getTriggerTower(const l1t::HGCalTriggerCell&) const;
+  std::unordered_map<unsigned short, float> getTriggerTower(const l1t::HGCalTriggerSums&) const;
 
   const bool isNose() { return doNose_; }
 
 private:
   std::vector<l1t::HGCalTowerCoord> tower_coords_;
   std::unordered_map<unsigned, short> cells_to_trigger_towers_;
+  std::unordered_map<std::string, std::string> modules_to_trigger_towers_;
 
   bool doNose_;
   double minEta_;
@@ -54,6 +56,11 @@ private:
 
   std::vector<double> binsEta_;
   std::vector<double> binsPhi_;
+
+  bool splitModuleSum_;
+  edm::FileInPath moduleTowerMapping_;
+  int splitDivisorSilic_;
+  int splitDivisorScint_;
 
   HGCalTriggerTools triggerTools_;
 };
