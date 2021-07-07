@@ -87,6 +87,7 @@ histoMax_C3d_seeding_params = cms.PSet(type_histoalgo=cms.string('HistoMaxC3d'),
                                seeding_space=cms.string("RPhi"),# RPhi, XY
                                seed_smoothing_ecal=seed_smoothing_ecal,
                                seed_smoothing_hcal=seed_smoothing_hcal,
+                               seeds_norm_by_area=cms.bool(False)
                               )
 
 histoMax_C3d_clustering_params = cms.PSet(dR_multicluster=cms.double(0.03),
@@ -105,7 +106,7 @@ histoMax_C3d_clustering_params = cms.PSet(dR_multicluster=cms.double(0.03),
 # (see https://indico.cern.ch/event/806845/contributions/3359859/attachments/1815187/2966402/19-03-20_EGPerf_HGCBE.pdf
 # for more details)
 phase2_hgcalV10.toModify(histoMax_C3d_seeding_params,
-                        threshold_histo_multicluster=8.5,  # MipT
+                        threshold_histo_multicluster=20,  # arb. units (for seeds_norm_by_area=False)
                         )
 
 

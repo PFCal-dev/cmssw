@@ -13,6 +13,7 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
       neighbour_weights_(conf.getParameter<std::vector<double>>("neighbour_weights")),
       smoothing_ecal_(conf.getParameter<std::vector<double>>("seed_smoothing_ecal")),
       smoothing_hcal_(conf.getParameter<std::vector<double>>("seed_smoothing_hcal")),
+      seeds_norm_by_area_(conf.getParameter<bool>("seeds_norm_by_area")),
       kROverZMin_(conf.getParameter<double>("kROverZMin")),
       kROverZMax_(conf.getParameter<double>("kROverZMax")) {
   if (seedingAlgoType_ == "HistoMaxC3d") {
@@ -64,6 +65,12 @@ HGCalHistoSeedingImpl::HGCalHistoSeedingImpl(const edm::ParameterSet& conf)
         << "Inconsistent size of neighbour weights vector in HGCalMulticlustering ( " << neighbour_weights_.size()
         << " ). Should be " << neighbour_weights_size_ << "\n";
   }
+
+  // compute quantities for non-normalised-by-area histoMax
+  bin1_10pct_ = (int)0.1 * nBins1_;
+  R1_10pct_ = kROverZMin_ + bin1_10pct_ * (kROverZMax_ - kROverZMin_) / nBins1_;
+  R2_10pct_ = R1_10pct_ + ((kROverZMax_ - kROverZMin_) / nBins1_);
+  area_10pct_ = ((M_PI * (pow(R2_10pct_, 2) - pow(R1_10pct_, 2))) / nBins2_);
 }
 
 HGCalHistoSeedingImpl::Histogram HGCalHistoSeedingImpl::fillHistoClusters(
@@ -163,18 +170,24 @@ HGCalHistoSeedingImpl::Histogram HGCalHistoSeedingImpl::fillSmoothPhiHistoCluste
                                                                                    const vector<unsigned>& binSums) {
   Histogram histoSumPhiClusters(nBins1_, nBins2_);
 
+
   for (int z_side : {-1, 1}) {
     for (unsigned bin1 = 0; bin1 < nBins1_; bin1++) {
       int nBinsSide = (binSums[bin1] - 1) / 2;
-      float R1 = kROverZMin_ + bin1 * (kROverZMax_ - kROverZMin_) / nBins1_;
-      float R2 = R1 + ((kROverZMax_ - kROverZMin_) / nBins1_);
       double area =
-          ((M_PI * (pow(R2, 2) - pow(R1, 2))) / nBins2_) *
           (1 +
            2.0 *
                (1 -
                 pow(0.5,
                     nBinsSide)));  // Takes into account different area of bins in different R-rings + sum of quadratic weights used
+
+      if (seeds_norm_by_area_) {
+        float R1 = kROverZMin_ + bin1 * (kROverZMax_ - kROverZMin_) / nBins1_;
+        float R2 = R1 + ((kROverZMax_ - kROverZMin_) / nBins1_);
+        area = area * ((M_PI * (pow(R2, 2) - pow(R1, 2))) / nBins2_);
+      } else {
+        area = area * area_10pct_;
+      }
 
       for (unsigned bin2 = 0; bin2 < nBins2_; bin2++) {
         const auto& bin_orig = histoClusters.at(z_side, bin1, bin2);
