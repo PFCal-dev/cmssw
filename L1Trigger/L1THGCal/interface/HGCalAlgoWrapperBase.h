@@ -22,9 +22,15 @@ typedef HGCalAlgoWrapperBaseT<std::vector<edm::Ptr<l1t::HGCalTowerMap>>,
                               std::pair<const edm::EventSetup&, const edm::ParameterSet&>>
     HGCalTowerMapsWrapperBase;
 
+typedef HGCalAlgoWrapperBaseT<l1t::HGCalMulticlusterBxCollection,
+                              l1t::HGCalMulticlusterBxCollection,
+                              std::pair<const edm::EventSetup&, const edm::ParameterSet&>>
+    HGCalSortingTruncationWrapperBase;
+
 #include "FWCore/PluginManager/interface/PluginFactory.h"
 typedef edmplugin::PluginFactory<HGCalHistoClusteringWrapperBase*(const edm::ParameterSet&)>
     HGCalHistoClusteringWrapperBaseFactory;
 typedef edmplugin::PluginFactory<HGCalTowerMapsWrapperBase*(const edm::ParameterSet&)> HGCalTowerMapsWrapperBaseFactory;
-
+typedef edmplugin::PluginFactory<HGCalSortingTruncationWrapperBase*(const edm::ParameterSet&)>
+    HGCalSortingTruncationWrapperBaseFactory;
 #endif
