@@ -61,8 +61,11 @@ HGCAL_noise_heback = cms.PSet(
     scaleByDoseAlgo = cms.uint32(0),
     scaleByDoseFactor = cms.double(1),
     doseMap = cms.string(""), #empty dose map at begin-of-life
-    noise_MIP = cms.double(1./100.)
-    )
+    sipmMap = cms.string(""), #if empty will prompt to use geometry-based definition
+    referenceIdark = cms.double(-1),
+    referenceXtalk = cms.double(-1),
+    noise_MIP = cms.double(1./7.) #this is to be deprecated
+)
 
 HGCAL_chargeCollectionEfficiencies = cms.PSet(
     values = cms.vdouble( nonAgedCCEs )
@@ -150,16 +153,12 @@ hgchebackDigitizer = cms.PSet(
     verbosity         = cms.untracked.uint32(0),
     digiCfg = cms.PSet(
         #0 empty digitizer, 1 calice digitizer, 2 realistic digitizer
-        algo          = cms.uint32(2),
-        scaleByTileArea= cms.bool(False),
-        scaleBySipmArea= cms.bool(False),
-        sipmMap       = cms.string("SimCalorimetry/HGCalSimProducers/data/sipmParams_geom-10.txt"),
+        algo          = cms.uint32(2),        
         noise         = cms.PSet(refToPSet_ = cms.string("HGCAL_noise_heback")), #scales both for scint raddam and sipm dark current
         keV2MIP       = cms.double(1./675.0),
         doTimeSamples = cms.bool(False),
         nPEperMIP = cms.double(21.0),
-        nTotalPE  = cms.double(7500),
-        xTalk     = cms.double(0.01),
+        nTotalPE  = cms.double(7500),        
         sdPixels  = cms.double(1e-6), # this is additional photostatistics noise (as implemented), not sure why it's here...
         thresholdFollowsMIP = cms.bool(thresholdTracksMIP),
         feCfg = hgcROCSettings.clone(
@@ -211,13 +210,20 @@ for _m in [hgceeDigitizer, hgchefrontDigitizer, hgchebackDigitizer, hfnoseDigiti
     premix_stage1.toModify(_m, premixStage1 = True)
 
 #function to set noise to aged HGCal
-endOfLifeCCEs = [0.5, 0.5, 0.7]
-endOfLifeNoises = [2400.0,2250.0,1750.0]
-def HGCal_setEndOfLifeNoise(process,byDose=True,byDoseAlgo=0,byDoseFactor=1):
-    """includes all effects from radiation and gain choice"""
-    # byDoseAlgo is used as a collection of bits to toggle: FLUENCE, CCE, NOISE, PULSEPERGAIN, CACHEDOP (from lsb to Msb)
+endOfLifeCCEs = [0.5, 0.5, 0.7] # this is to be deprecated
+endOfLifeNoises = [2400.0,2250.0,1750.0]  #this is to be deprecated
+def HGCal_setEndOfLifeNoise(process,byDose=True,byDoseAlgo=0,byDoseAlgoSci=2,byDoseFactor=1):
+    """
+    includes all effects from radiation and gain choice
+    (see also notes in HGCal_setRealisticStartupNoise)    
+    """
+
     process=HGCal_setRealisticNoiseSi(process,byDose=byDose,byDoseAlgo=byDoseAlgo,byDoseFactor=byDoseFactor)
-    process=HGCal_setRealisticNoiseSci(process,byDose=byDose,byDoseAlgo=byDoseAlgo,byDoseFactor=byDoseFactor)
+    process=HGCal_setRealisticNoiseSci(process,
+                                       byDose=byDose,
+                                       byDoseAlgo=byDoseAlgoSci,
+                                       byDoseFactor=byDoseFactor,
+                                       referenceIdark=0.25)
     return process
 
 def HGCal_setEndOfLifeNoise_4000(process):
@@ -242,45 +248,78 @@ def HGCal_setEndOfLifeNoise_1500(process):
     )
     return HGCal_setEndOfLifeNoise(process,byDoseFactor=0.5)
 
-def HGCal_ignoreFluence(process):
-    """include all effects except fluence impact on leakage current and CCE"""
-    # byDoseAlgo is used as a collection of bits to toggle: FLUENCE, CCE, NOISE, PULSEPERGAIN, CACHEDOP (from lsb to Msb)
-    # for instance turning on the 0th bit turns off the impact of fluence
+def HGCal_setRealisticStartupNoise(process):
+    """ 
+    include all effects except:
+    * fluence impact on leakage current, CCE and SiPM dark current
+    * dose impact on tile light yield
+    dark current on SiPMs adjusted for a S/N ~ 7
+    Notes
+    * byDoseAlgo is used as a collection of bits to toggle: 
+       * Si: FLUENCE, CCE, NOISE, PULSEPERGAIN, CACHEDOP (from lsb to Msb)
+       * Sci: IGNORE_SIPMAREA, OVERRIDE_SIPMAREA, IGNORE_TILEAREA, IGNORE_DOSESCALE, IGNORE_FLUENCESCALE, IGNORE_NOISE, IGNORE_TILETYPE (from lsb to Msb)
+      (for instance turning on the 0th  bit turns off the impact of fluence in Si)
+    """
     process=HGCal_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=1)
-    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=1)
+    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=2+8+16,referenceIdark=0.125,referenceXtalk=0.01)
     return process
 
-def HGCal_setRealisticStartupNoise(process):
-    """include all effects except fluence impact on leakage current and CCE"""
-    #note: realistic electronics with Sci is not yet switched on
-    # byDoseAlgo is used as a collection of bits to toggle: FLUENCE, CCE, NOISE, PULSEPERGAIN, CACHEDOP (from lsb to Msb)
-    # for instance turning on the 0th  bit turns off the impact of fluence
+def HGCal_setRealisticStartupNoise_fixedSiPMTileAreasAndSN(process,targetSN=7,referenceXtalk=-1):
+    """ 
+    similar to HGCal_setRealisticStartupNoise but tile and SiPM areas are fixed
+    as 4mm2 assumed use Idark=0.25 so that S/N ~ 7
+    by changing the target S/N different the reference Idark will be scaled accordingly
+    """
     process=HGCal_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=1)
+    
+    #scale dark current on the SiPM so that it corresponds to the target S/N
+    idark=0.25/(targetSN/6.97)**2
+    print('[HGCal_setRealisticStartupNoise_fixedSiPMTileAreasAndSN] for a target S/N={:3.2f} setting idark={:3.3f}nA'.format(targetSN,idark))
+    process=HGCal_setRealisticNoiseSci(process,byDose=True,
+                                       byDoseAlgo=2+4+8+16+64,
+                                       byDoseSipmMap=cms.string("SimCalorimetry/HGCalSimProducers/data/sipmParams_all4mm2.txt"),
+                                       referenceIdark=idark,
+                                       referenceXtalk=referenceXtalk)
+    return process
+
+
+def HGCal_ignoreFluence(process):
+    """
+    include all effects except fluence impact on leakage current and CCE and SiPM dark current
+    and dose impact on tile light yield
+    (see also notes in HGCal_setRealisticStartupNoise)    
+    """
+    process=HGCal_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=1)
+    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=2+8+16)
     return process
 
 def HGCal_ignoreNoise(process):
-    """include all effects except noise impact on leakage current and CCE, and scint"""
-    # byDoseAlgo is used as a collection of bits to toggle: FLUENCE, CCE, NOISE, PULSEPERGAIN, CACHEDOP (from lsb to Msb)
-    # for instance turning on the 2nd bit activates ignoring the cache
+    """
+    include all effects except noise impact on leakage current and CCE, and scint
+    (see also notes in HGCal_setRealisticStartupNoise)
+    """
     process=HGCal_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=4)
-    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=4)
+    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=2+32)
     return process
 
 def HGCal_ignorePulsePerGain(process):
-    """include all effects except the per-gain pulse emulation"""
-    # byDoseAlgo is used as a collection of bits to toggle: FLUENCE, CCE, NOISE, PULSEPERGAIN, CACHEDOP (from lsb to Msb)
-    # for instance turning on the 3rd bit activates ignoring the cache
+    """
+    include all effects except the per-gain pulse emulation
+    for the moment this only done for Si
+    (see also notes in HGCal_setRealisticStartupNoise)   
+    """
     process=HGCal_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=8)
-    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=8)
+    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=2)
     return process
 
 def HGCal_useCaching(process):
-    """include all effects except cachine of siop parameters (gain cpu time)"""
-    #note: realistic electronics with Sci is not yet switched on
-    # byDoseAlgo is used as a collection of bits to toggle: FLUENCE, CCE, NOISE, PULSEPERGAIN, CACHEDOP (from lsb to Msb)
-    # for instance turning on the 4th bit activates using the cache
+    """
+    include all effects except cachine of siop parameters (gain cpu time)
+    for the moment this only done for Si
+    (see also notes in HGCal_setRealisticStartupNoise)        
+    """    
     process=HGCal_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=16)
-    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=16)
+    process=HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=2)
     return process
 
 doseMap = cms.string("SimCalorimetry/HGCalSimProducers/data/doseParams_3000fb_fluka-3.7.20.txt")
@@ -293,12 +332,17 @@ def HGCal_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=0,byDoseMap=doseMap
         doseMap = byDoseMap,
         values = cms.vdouble( [x*fC_per_ele for x in endOfLifeNoises] ), #100,200,300 um
         )
-    process.HGCAL_chargeCollectionEfficiencies = cms.PSet(
+
+    #this is to be deprecated
+    process.HGCAL_chargeCollectionEfficiencies = cms.PSet(  
         values = cms.vdouble(endOfLifeCCEs)
         )
+    
+    #this is to be deprecated
     process.HGCAL_noises = cms.PSet(
-        values = cms.vdouble([x for x in endOfLifeNoises])
+        values = cms.vdouble([x for x in endOfLifeNoises])  
         )
+
     return process
 
 def HFNose_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=0,byDoseMap=doseMap,byDoseFactor=1):
@@ -312,13 +356,23 @@ def HFNose_setRealisticNoiseSi(process,byDose=True,byDoseAlgo=0,byDoseMap=doseMa
     return process
 
 
-def HGCal_setRealisticNoiseSci(process,byDose=True,byDoseAlgo=0,byDoseMap=doseMap,byDoseFactor=1):
+def HGCal_setRealisticNoiseSci(process,
+                               byDose=True,
+                               byDoseAlgo=2,
+                               byDoseMap=doseMap,
+                               byDoseSipmMap=cms.string("SimCalorimetry/HGCalSimProducers/data/sipmParams_geom-10.txt"),
+                               byDoseFactor=1,
+                               referenceIdark=0.25,
+                               referenceXtalk=-1):
     process.HGCAL_noise_heback = cms.PSet(
         scaleByDose = cms.bool(byDose),
         scaleByDoseAlgo = cms.uint32(byDoseAlgo),
         scaleByDoseFactor = cms.double(byDoseFactor),
         doseMap = byDoseMap,
-        noise_MIP = cms.double(1./5.) #uses noise map
+        sipmMap = byDoseSipmMap,
+        referenceIdark = cms.double(referenceIdark),
+        referenceXtalk = cms.double(referenceXtalk),
+        noise_MIP = cms.double(1./5.), #this is to be deprecated (still needed for vanilla for the moment)
         )
     return process
 
@@ -335,7 +389,9 @@ def HGCal_disableNoise(process):
         scaleByDoseAlgo = cms.uint32(0),
         scaleByDoseFactor = cms.double(1),
         doseMap = cms.string(""),
-        noise_MIP = cms.double(0.) #zero noise
+        referenceIdark = cms.double(0.),
+        referenceXtalk = cms.double(-1),
+        noise_MIP = cms.double(0.), #zero noise (this is to be deprecated)
         )
     process.HGCAL_noises = cms.PSet(
         values = cms.vdouble(0,0,0)

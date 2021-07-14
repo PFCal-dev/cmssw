@@ -8,10 +8,37 @@
 
 /**
    @class HGCalSciNoiseMap
-   @short derives from HGCalRadiation map to parse fluence parameters, provides Sci-specific functions
+   @short derives from HGCalRadiation map to parse fluence/dose parameters, provides Sci-specific functions
+          the algo word (set at configuration level) is used to control which aspects are simulated
+          bit 1 - ignores the scaling of signal and noise with SIPMAREA
+          bit 2 - instead of the geometry-based SiPM area (from detId, if available) use the boundaries read from a txt file
+          bit 3 - ignores the scaling of the signal light yield with the tile area
+          bit 4 - ignores the scaling of the light yield with the dose
+          bit 5 - ignores the scaling of the noise with the fluence (=constant noise scenario)
+          bit 6 - ignores noise
+          bit 7 - ignore tile type (fallback on CAST)
 */
+
 class HGCalSciNoiseMap : public HGCalRadiationMap {
 public:
+  enum TileType_t { CAST, MOULDED };
+  enum GainRange_t { GAIN_2, GAIN_4, AUTO };  //roc gain for 2mm2 and 4mm2
+  enum NoiseMapAlgoBits_t {
+    IGNORE_SIPMAREA,
+    OVERRIDE_SIPMAREA,
+    IGNORE_TILEAREA,
+    IGNORE_DOSESCALE,
+    IGNORE_FLUENCESCALE,
+    IGNORE_NOISE,
+    IGNORE_TILETYPE
+  };
+
+  struct SiPMonTileCharacteristics {
+    SiPMonTileCharacteristics() : s(0.), lySF(0.), n(0.), xtalk(0), gain(0), thrADC(0), ntotalPE(0) {}
+    float s, lySF, n, xtalk;
+    unsigned short gain, thrADC, ntotalPE;
+  };
+
   HGCalSciNoiseMap();
   ~HGCalSciNoiseMap(){};
 
@@ -19,16 +46,52 @@ public:
      @short returns the signal scaling and the noise
   */
   double scaleByTileArea(const HGCScintillatorDetId &, const double);
-  double scaleBySipmArea(const HGCScintillatorDetId &, const double);
-  std::pair<double, double> scaleByDose(const HGCScintillatorDetId &, const double);
+  std::pair<double, GainRange_t> scaleBySipmArea(const HGCScintillatorDetId &, const double);
+  SiPMonTileCharacteristics scaleByDose(const HGCScintillatorDetId &,
+                                        const double,
+                                        const int aimMIPtoADC = 15,
+                                        const GainRange_t gain = GainRange_t::AUTO);
 
+  void setDoseMap(const std::string &, const unsigned int);
   void setSipmMap(const std::string &);
+  void setReferenceDarkCurrent(double idark);
+  void setReferenceCrossTalk(double xtalk) { refXtalk_ = xtalk; }
+  void setNpePerMIP(float npePerMIP);
+  std::vector<double> &getLSBPerGain() { return lsbPerGain_; }
+  std::vector<double> &getMaxADCPerGain() { return fscADCPerGain_; }
+  std::vector<double> &getNpePerMIP() { return nPEperMIP_; }
+  float getNPeInSiPM() { return maxSiPMPE_; }
 
 private:
+  /**
+     @short parses the radius boundaries for the SiPM area assignment from a custom file
+   */
   std::unordered_map<int, float> readSipmPars(const std::string &);
+
+  //reference signal yields
+  std::vector<double> nPEperMIP_;
+
+  //lsb and fsc per gain
+  std::vector<double> lsbPerGain_, fscADCPerGain_;
 
   //size of the reference scintillator tile
   const double refEdge_;
+
+  //flags used to disable/override specific SiPM-on-tile operation parameters
+  bool ignoreSiPMarea_, overrideSiPMarea_, ignoreTileArea_, ignoreDoseScale_, ignoreFluenceScale_, ignoreNoise_,
+      ignoreTileType_;
+
+  //reference dark current for the noise (mA)
+  double refDarkCurrent_;
+
+  //reference cross talk parameter (0,1) - if -1 it will be used to ignore effect in the digitization step
+  double refXtalk_;
+
+  //reference ADC counts for the MIP peak
+  int aimMIPtoADC_;
+
+  //reference number of pixels (2mm2 SiPM)
+  float maxSiPMPE_;
 
   //sipm size boundaries
   std::unordered_map<int, float> sipmMap_;
